@@ -4,32 +4,37 @@ import * as ROSLIB from 'roslib';
 import './index.css';
 
 import PaginaTelemetria from './PaginaTelemetria';
-// import PaginaControlo from './PaginaControlo';    
 import PaginaVisualizacao from './PaginaVisualizacao'; 
 
 function App() {
-  const [status, setStatus] = useState('A aguardar ligação...');
-  const [statusColor, setStatusColor] = useState('yellow');
+  const [status, setStatus] = useState('DESCONECTADO');
+  const [statusColor, setStatusColor] = useState('#ff4d4d');
   const [ros, setRos] = useState(null);
+  const [bateria, setBateria] = useState(0);
 
   useEffect(() => {
-    const rosConnection = new ROSLIB.Ros({
-      url: 'ws://localhost:9090'
-    });
+    const rosConnection = new ROSLIB.Ros({ url: 'ws://localhost:9090' });
 
     rosConnection.on('connection', () => {
-      setStatus('Ligado ao Sentinel!');
+      setStatus('LIGADO!');
       setStatusColor('#00d66b');
       setRos(rosConnection);
+
+      const batteryTopic = new ROSLIB.Topic({
+        ros: rosConnection,
+        name: '/Battery',
+        messageType: 'sensor_msgs/msg/BatteryState'
+      });
+      batteryTopic.subscribe((msg) => setBateria(msg.percentage));
     });
 
     rosConnection.on('error', () => {
-      setStatus('Sentinel não Encontrado!');
+      setStatus('ERRO');
       setStatusColor('#ff4d4d');
     });
 
     rosConnection.on('close', () => {
-      setStatus('Ligação Encerrada!');
+      setStatus('OFFLINE');
       setStatusColor('#888888');
       setRos(null);
     });
@@ -37,23 +42,41 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div>
-        <h1 style={{ paddingTop: '30px' }}>Sentinel GUI</h1>
-        <h2 style={{ color: statusColor }}>{status}</h2>
+      <div className="app-wrapper">
+        <header className="mission-header">
+          <div className="header-left"></div>
 
-        <nav className="navbar">
-          <NavLink to="/controlo" className="nav-link">CONTROLO</NavLink>
-          <NavLink to="/visualizacao" className="nav-link">VISUALIZAÇÃO</NavLink>
-          <NavLink to="/" className="nav-link">TELEMETRIA</NavLink>
-        </nav>
+          <nav className="header-center navbar">
+            <NavLink to="/controlo" className="nav-link">CONTROLO</NavLink>
+            <NavLink to="/visualizacao" className="nav-link">VISUALIZAÇÃO</NavLink>
+            <NavLink to="/" className="nav-link">TELEMETRIA</NavLink>
+          </nav>
 
-        <Routes>
-          <Route path="/" element={<PaginaTelemetria ros={ros} />} />
-          
-          {/* <Route path="/controlo" element={<PaginaControlo ros={ros} />} /> */}
-          <Route path="/visualizacao" element={<PaginaVisualizacao ros={ros} />} />
-        </Routes>
-        
+          <div className="header-right">
+            <div className="status-zone">
+              <div className="status-led" style={{ backgroundColor: statusColor }}></div>
+              <span className="status-text" style={{ color: statusColor }}>{status}</span>
+            </div>
+
+            <div className="battery-zone">
+              <span className="battery-text">{(bateria * 100).toFixed(0)}%</span>
+              <div className="battery-icon">
+                <div className="battery-level" style={{ 
+                  width: `${bateria * 100}%`, 
+                  backgroundColor: bateria > 0.2 ? '#00d66b' : '#ff4d4d' 
+                }}></div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="content-area">
+          <Routes>
+            <Route path="/" element={<PaginaTelemetria ros={ros} />} />
+            <Route path="/visualizacao" element={<PaginaVisualizacao ros={ros} />} />
+            <Route path="/controlo" element={<div className="card">Controlo</div>} />
+          </Routes>
+        </main>
       </div>
     </BrowserRouter>
   );

@@ -1,30 +1,34 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
-function SentinelModel(props) {
-
-  const { scene } = useGLTF('/sentinel.glb');
-  
+function SentinelModel({ rotationQuat, ...props }) {
+  const { scene } = useGLTF('/sentinel.glb'); 
   const modelRef = useRef();
 
-  useFrame((state, delta) => {
-    if (modelRef.current) {
-      modelRef.current.rotation.y += delta * 0.1; 
+  useEffect(() => {
+    if (modelRef.current && rotationQuat) {
+
+      const quat = new THREE.Quaternion(
+        rotationQuat.x,
+        rotationQuat.z,   
+        -rotationQuat.y,  
+        rotationQuat.w
+      );
+      modelRef.current.setRotationFromQuaternion(quat);
     }
-  });
+  }, [rotationQuat]);
 
   return (
     <primitive 
-      ref={modelRef} // Prendemos a referência
-      object={scene}   // O objeto 3D em si
-      scale={1.5}      // Ajusta o tamanho se o robô for gigante ou minúsculo!
-      position={[0, -1, 0]} // Sobe/desce o robô para centrar na câmara
-      {...props}       // Passa outras propriedades (como sombras, etc.)
+      ref={modelRef}
+      object={scene} 
+      scale={50.0} 
+      position={[0, 0, 0]} 
+      {...props} 
     />
   );
 }
 
 useGLTF.preload('/sentinel.glb');
-
 export default SentinelModel;

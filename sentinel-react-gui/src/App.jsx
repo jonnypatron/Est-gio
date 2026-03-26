@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import * as ROSLIB from 'roslib';
 import './index.css';
-import CardBateria from './CardBateria';
-import CardAmbiente from './CardAmbiente';
-import CardPropulsores from './CardPropulsores'; 
-import CardDadosIMU from './CardDadosIMU';
-import CardForcaG from './CardForcaG';
+
+import PaginaTelemetria from './PaginaTelemetria';
+// import PaginaControlo from './PaginaControlo';    
+import PaginaVisualizacao from './PaginaVisualizacao'; 
 
 function App() {
   const [status, setStatus] = useState('A aguardar ligação...');
   const [statusColor, setStatusColor] = useState('yellow');
-  
   const [ros, setRos] = useState(null);
 
   useEffect(() => {
@@ -34,28 +33,29 @@ function App() {
       setStatusColor('#888888');
       setRos(null);
     });
-
   }, []);
 
-return (
-    <div>
-      <h1 style={{ paddingTop: '30px' }}>Sentinel GUI</h1>
-      <h2 style={{ color: statusColor }}>{status}</h2>
+  return (
+    <BrowserRouter>
+      <div>
+        <h1 style={{ paddingTop: '30px' }}>Sentinel GUI</h1>
+        <h2 style={{ color: statusColor }}>{status}</h2>
 
-      <div className="container">
-        {ros && <CardBateria ros={ros} />}
-        {ros && <CardAmbiente ros={ros} />}
-      </div>
+        <nav className="navbar">
+          <NavLink to="/controlo" className="nav-link">CONTROLO</NavLink>
+          <NavLink to="/visualizacao" className="nav-link">VISUALIZAÇÃO</NavLink>
+          <NavLink to="/" className="nav-link">TELEMETRIA</NavLink>
+        </nav>
 
-      <div className="container">
-        {ros && <CardPropulsores ros={ros} />}
+        <Routes>
+          <Route path="/" element={<PaginaTelemetria ros={ros} />} />
+          
+          {/* <Route path="/controlo" element={<PaginaControlo ros={ros} />} /> */}
+          <Route path="/visualizacao" element={<PaginaVisualizacao ros={ros} />} />
+        </Routes>
+        
       </div>
-
-      <div className="container">
-        {ros && <CardDadosIMU ros={ros} />}
-        {ros && <CardForcaG ros={ros} />}
-      </div>
-    </div>
+    </BrowserRouter>
   );
 }
 

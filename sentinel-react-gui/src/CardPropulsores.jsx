@@ -2,55 +2,54 @@ import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
 
 function CardPropulsores({ ros }) {
-    const [leds, setLeds] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
+  const [thrusters, setThrusters] = useState(new Array(8).fill(0));
 
-    useEffect(() => {
-        const topicoPropulsores = new ROSLIB.Topic({
-            ros: ros,
-            name: '/propulsores_array',
-            messageType: 'std_msgs/msg/Int32MultiArray'
-        });
+  useEffect(() => {
+    if (!ros) return;
 
-        topicoPropulsores.subscribe((mensagem) => {
-            setLeds(mensagem.data);
-        });
-    }, [ros]);
+    const topico = new ROSLIB.Topic({
+      ros: ros,
+      name: '/propulsores_array',
+      messageType: 'std_msgs/Int32MultiArray'
+    });
 
-    const renderLed = (index, label) => {
-        return (
-            <div className="thrusters">
-                {label}
-                <div 
-                    className="led"
-                    style={{ backgroundColor: leds[index] === 1 ? '#00d66b' : 'gray' }}
-                    ></div>
-            </div>
-        );
-    };
+    topico.subscribe((msg) => setThrusters(msg.data));
 
-    return (
-        <>
-            <div className="card">
-                <h2>Propulsores de Cima</h2>
-                <div className="ring-grid">
-                    {renderLed(7, "Frente Esq.")}
-                    {renderLed(4, "Frente Dir.")}
-                    {renderLed(6, "Trás Esq.")}
-                    {renderLed(5, "Trás Dir.")}
-                </div>
-            </div>
+    return () => topico.unsubscribe();
+  }, [ros]);
 
-            <div className="card">
-                <h2>Propulsores de Baixo</h2>
-                <div className="ring-grid">
-                    {renderLed(3, "Frente Esq.")}
-                    {renderLed(0, "Frente Dir.")}
-                    {renderLed(2, "Trás Esq.")}
-                    {renderLed(1, "Trás Dir.")}
-                </div>
-            </div>
-        </>
-    );
+  const renderManifold = (titulo, indices) => (
+    <div className="manifold-container">
+      <h3 className="manifold-title">{titulo}</h3>
+      <div className="manifold-circle">
+        <div className="forward-mark">FRENTE</div>
+
+        <ThrusterNozzle active={thrusters[indices[0]]} position="fr" label={`T${indices[0]}`} />
+        <ThrusterNozzle active={thrusters[indices[1]]} position="rr" label={`T${indices[1]}`} />
+        <ThrusterNozzle active={thrusters[indices[2]]} position="rl" label={`T${indices[2]}`} />
+        <ThrusterNozzle active={thrusters[indices[3]]} position="fl" label={`T${indices[3]}`} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="card rcs-card">
+      <h2>PROPULSORES</h2>
+      <div className="manifolds-wrapper-vertical">
+        {renderManifold("CIMA", [4, 5, 6, 7])}
+        {renderManifold("BAIXO", [0, 1, 2, 3])}
+      </div>
+    </div>
+  );
+}
+
+function ThrusterNozzle({ active, position, label }) {
+  return (
+    <div className={`thruster-nozzle pos-${position} ${active ? 'firing' : ''}`}>
+      <span className="thruster-label">{label}</span>
+      <div className="gas-plume"></div> 
+    </div>
+  );
 }
 
 export default CardPropulsores;

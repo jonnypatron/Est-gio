@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
+import CircularGauge from './CircularGauge';
 
 function CardAmbiente({ ros }) {
-    const [temperatura, setTemperatura] = useState('--');
-    const [pressao, setPressao] = useState('--');
+    const [temperatura, setTemperatura] = useState(0);
+    const [pressao, setPressao] = useState(0);
 
     useEffect(() => {
         const topicoTemperatura = new ROSLIB.Topic({
@@ -19,11 +20,11 @@ function CardAmbiente({ ros }) {
         });
 
         topicoTemperatura.subscribe((mensagem) => {
-            setTemperatura(mensagem.temperature.toFixed(2));
+            setTemperatura(mensagem.temperature);
         });
 
         topicoPressao.subscribe((mensagem) => {
-            setPressao(mensagem.data.toFixed(2)); 
+            setPressao(mensagem.data); 
         });
 
         return () => {
@@ -34,12 +35,22 @@ function CardAmbiente({ ros }) {
 
     return (
         <div className="card">
-            <h2>Ambiente</h2>
-            <div className="data-value" style={{ color: '#00d66b' }}>
-                {temperatura} °C
-            </div>
-            <div className="data-value" style={{ color: '#00d66b' }}>
-                {pressao} bar
+            <h2>AMBIENTE</h2>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+        
+                <CircularGauge 
+                value={temperatura} 
+                min={0} max={100} 
+                label="TEMPERATURA" unit="°C" 
+                />
+        
+                <CircularGauge 
+                value={pressao} 
+                min={0} max={20} 
+                label="PRESSÃO" unit="bar" 
+                color="#3498db"
+                />
+        
             </div>
         </div>
     );

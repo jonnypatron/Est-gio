@@ -2,8 +2,8 @@ import { ResponsiveContainer, AreaChart, Area, YAxis, CartesianGrid } from 'rech
 
 function MiniChart({ data, dataKey, color = "#00d66b" }) {
   return (
-    <div style={{ width: '100%', height: 100, marginTop: '10px' }}>
-      <ResponsiveContainer>
+    <div style={{ width: '100%', height: '100px', marginTop: '10px' }}>
+      <ResponsiveContainer width="100%" height="100%" minHeight={100}>
         <AreaChart data={data}>
           <defs>
             <linearGradient id={`color${dataKey}`} x1="0" y1="0" x2="0" y2="1">

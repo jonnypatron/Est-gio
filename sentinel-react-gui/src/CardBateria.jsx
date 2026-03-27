@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
-import MiniChart from './MiniChart'; // Importamos a nossa nova "ferramenta" de desenho
+import MiniChart from './MiniChart';
 
 function CardBateria({ ros }) {
   const [bateria, setBateria] = useState('--');
   const [voltagem, setVoltagem] = useState('--');
-  
-  // NOVO: Array para guardar o histórico do gráfico
+
   const [historicoVoltagem, setHistoricoVoltagem] = useState([]);
 
   useEffect(() => {
@@ -25,17 +24,12 @@ function CardBateria({ ros }) {
       setBateria(perc);
       setVoltagem(volt);
 
-      // NOVO: A magia de guardar o histórico!
       setHistoricoVoltagem((historicoAntigo) => {
-        // Criamos um novo ponto com a voltagem atual
         const novoPonto = { voltagem: parseFloat(volt) };
         
-        // Juntamos o ponto novo ao histórico antigo
         const novoHistorico = [...historicoAntigo, novoPonto];
         
-        // Se a lista passar de 50 pontos, apagamos o mais antigo (shift)
-        // Isto impede que a memória do Raspberry Pi encha!
-        if (novoHistorico.length > 50) {
+        if (novoHistorico.length > 400) {
           novoHistorico.shift(); 
         }
         
@@ -50,13 +44,11 @@ function CardBateria({ ros }) {
 
   return (
     <div className="card">
-      {/* Título com Legenda do Gráfico */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Battery Status</h2>
-        <span style={{ fontSize: '10px', color: '#00d66b', fontWeight: 'bold' }}>— Voltage</span>
+        <h2>Bateria</h2>
+        <span style={{ fontSize: '10px', color: '#00d66b', fontWeight: 'bold' }}>— Voltagem</span>
       </div>
-      
-      {/* Valores principais em destaque */}
+
       <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', marginTop: '10px' }}>
         <div className="data-value" style={{ color: '#00d66b', fontSize: '28px' }}>
           {voltagem} <span style={{ fontSize: '14px', color: '#888' }}>V</span>
@@ -66,7 +58,6 @@ function CardBateria({ ros }) {
         </div>
       </div>
 
-      {/* O Gráfico a receber a nossa "lista" de valores */}
       <MiniChart data={historicoVoltagem} dataKey="voltagem" color="#00d66b" />
     </div>
   );

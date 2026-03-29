@@ -46,13 +46,16 @@ function PaginaVisualizacao({ ros }) {
   return (
     <div className="viz-container">
       
-      <div className="viz-card video-card">
-        <div className="video-placeholder">
-          <span className="material-icons">videocam_off</span>
-          <p>CAMERA OFFLINE</p>
-        </div>
+      <div className="viz-card video-card" style={{ position: 'relative' }}>
         
-        <div className="hud-thrusters">
+        <iframe 
+          src="http://localhost:8889/live/" 
+          style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+          scrolling="no"
+          title="Sentinel WebRTC Feed"
+        />
+        
+        <div className="hud-thrusters" style={{ position: 'absolute', zIndex: 10, top: '15px', left: '15px' }}>
           <p className="hud-label">THRUSTER ARRAY</p>
           <div className="thruster-grid">
             {thrusters.map((active, i) => (
@@ -64,6 +67,7 @@ function PaginaVisualizacao({ ros }) {
         </div>
       </div>
 
+      {/* SEÇÃO 3D */}
       <div className="viz-card three-card">
         <Canvas camera={{ position: [5, 2, 5], fov: 40 }} shadows>
           <ambientLight intensity={0.5} /> 

@@ -8,19 +8,16 @@ function PaginaTelemetria({ ros }) {
   return (
     <div className="telemetry-dashboard">
       
-      {/* COLUNA 1: Energia e Dinâmica */}
       <div className="telemetry-column">
         {ros && <CardBateria ros={ros} />}
-        {ros && <CardDadosIMU ros={ros} />} {/* Apenas 1 vez aqui! */}
+        {ros && <CardDadosIMU ros={ros} />} 
       </div>
 
-      {/* COLUNA 2: Ambiente e Força G */}
       <div className="telemetry-column">
         {ros && <CardAmbiente ros={ros} />}
-        {ros && <CardForcaG ros={ros} />} {/* Metemos a Força G aqui para equilibrar */}
+        {ros && <CardForcaG ros={ros} />} 
       </div>
 
-      {/* COLUNA 3: Propulsores (Ocupa a altura toda) */}
       <div className="telemetry-column wide-column">
         {ros && <CardPropulsores ros={ros} />}
       </div>

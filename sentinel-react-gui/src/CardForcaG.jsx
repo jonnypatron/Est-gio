@@ -24,7 +24,7 @@ function CardForcaG({ ros }) {
 
   const displayG = Math.max(-3, Math.min(3, gForce));
 
-  const tapeOffset = displayG * 40; 
+  const tapeOffset = displayG * 60; 
 
   return (
     <div className="card gforce-card">

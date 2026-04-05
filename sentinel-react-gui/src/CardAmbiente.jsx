@@ -36,7 +36,7 @@ function CardAmbiente({ ros }) {
     return (
         <div className="card">
             <h2>AMBIENTE</h2>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-evenly', alignItems: 'center', flexGrow: 1 }}>
         
                 <CircularGauge 
                 value={temperatura} 

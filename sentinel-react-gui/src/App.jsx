@@ -13,7 +13,7 @@ function App() {
   const [bateria, setBateria] = useState(0);
 
   useEffect(() => {
-    const rosConnection = new ROSLIB.Ros({ url: 'ws://localhost:9090' });
+    const rosConnection = new ROSLIB.Ros({ url: 'ws://localhost:9090' }); // mudar aqui para "ws://192.etc:9090"
 
     rosConnection.on('connection', () => {
       setStatus('LIGADO!');

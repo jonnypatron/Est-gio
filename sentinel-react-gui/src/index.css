@@ -347,10 +347,11 @@ html, body {
 }
 
 .manifold-title {
-  font-size: 11px;
-  color: #888;
-  letter-spacing: 1px;
+  font-size: 16px;
+  color: #aaa;
+  letter-spacing: 3px;
   margin-bottom: 15px;
+  text-align: center;
 }
 
 .manifold-circle {
@@ -358,10 +359,12 @@ html, body {
   width: 140px;
   height: 140px;
   border-radius: 50%;
+  transform: scale(1.4);
   border: 2px dashed #333;
   background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%);
   display: flex;
   justify-content: center;
+  margin: 50px auto;
 }
 
 .forward-mark {
@@ -498,11 +501,9 @@ html, body {
 }
 
 .current-g-value {
-  color: #fff;
-  font-weight: 800;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  text-shadow: 0 0 5px #000;
+  font-size: 18px;
+  font-weight: bold;
+  color: #00d66b;
 }
 
 .moving-tape {
@@ -516,16 +517,17 @@ html, body {
 }
 
 .tape-tick {
-  height: 40px; 
+  height: 60px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  width: 45px;
+  align-items: center;
+  padding: 0 10px;
 }
 
 .tick-label {
-  color: #777;
-  font-size: 11px;
+  font-size: 16px; 
+  color: #888;
+  font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
 }
 
@@ -579,4 +581,45 @@ html, body {
   background: #222;
   margin: 15px 0;
 }
+
+.three-card {
+  padding: 0 !important; 
+  overflow: hidden;
+  border: 1px solid #222;
+}
+
+.modern-hud {
+  position: absolute;
+  bottom: 20px;
+  left: 20px; 
+  width: max-content; 
+  right: auto;  
+  display: flex;
+  gap: 15px;
+  background: rgba(10, 10, 10, 0.75);
+  padding: 10px 15px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  backdrop-filter: blur(4px); 
+  z-index: 10;
+}
+
+.modern-hud .hud-data {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.modern-hud span {
+  font-size: 9px;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.axis-x { color: #ff4d4d; } 
+.axis-y { color: #00d66b; } 
+.axis-z { color: #3498db; } 
 

@@ -9,8 +9,9 @@ function CardPropulsores({ ros }) {
 
     const topico = new ROSLIB.Topic({
       ros: ros,
-      name: '/propulsores_array',
-      messageType: 'std_msgs/Int32MultiArray'
+      name: '/thrusters/u',
+      messageType: 'std_msgs/msg/Int32MultiArray',
+      throttle_rate: 30
     });
 
     topico.subscribe((msg) => setThrusters(msg.data));

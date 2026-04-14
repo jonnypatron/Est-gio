@@ -1,3 +1,8 @@
+/* 0. FIX CRÍTICO: Garantir que paddings e borders não somam ao tamanho final */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   --bg: #111111;
   --panel: #2a2a2a;
@@ -623,3 +628,305 @@ html, body {
 .axis-y { color: #00d66b; } 
 .axis-z { color: #3498db; } 
 
+/* --- TERMINAL DE MISSÃO (CONSOLA) --- */
+.console-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #0a0a0a;
+  border: 1px solid #333;
+}
+
+.console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #222;
+  margin-bottom: 8px;
+}
+
+.console-title {
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.console-status {
+  font-size: 10px;
+  color: #00d66b;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+}
+
+.blink {
+  animation: blinker 1.5s linear infinite;
+}
+@keyframes blinker {
+  50% { opacity: 0; }
+}
+
+.console-window {
+  flex-grow: 1;
+  background-color: transparent;
+  color: #ccc;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #333 #0a0a0a;
+}
+
+.console-window::-webkit-scrollbar {
+  width: 6px;
+}
+.console-window::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 3px;
+}
+
+.log-line {
+  display: flex;
+  gap: 8px;
+  word-break: break-all;
+}
+
+.log-time {
+  color: #555;
+}
+
+.log-line.log .log-type { color: #3498db; }
+.log-line.log .log-text { color: #ccc; }
+
+.log-line.task .log-type { color: #ffd84a; }
+.log-line.task .log-text { color: #fff; font-weight: bold; }
+
+
+/* ==========================================================================
+   TABLET / MOBILE LANDSCAPE MODE (Ex: OnePlus Nord N10 5G - 912x412px)
+   ========================================================================== */
+@media screen and (max-width: 950px) and (orientation: landscape) {
+  
+  /* 1. TRANCA DE ECRÃ ABSOLUTA */
+  html, body, #root, .app-wrapper, .content-area {
+    overflow: hidden !important;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0 !important; /* Mata o padding que causava o scroll final! */
+  }
+
+  /* 2. HEADER MINIMALISTA */
+  .mission-header {
+    height: 35px;
+    padding: 0 10px;
+  }
+  .nav-link {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  .battery-icon { transform: scale(0.7); transform-origin: right; }
+  .header-right { gap: 15px; }
+
+  /* 3. NOVA GRELHA (3 COLUNAS) COM PROTEÇÃO ANTI-STRETCH */
+  .telemetry-dashboard {
+    padding: 5px;
+    gap: 8px;
+    height: calc(100vh - 35px);
+    grid-template-columns: 1fr 1.3fr 1fr; 
+  }
+  
+  .telemetry-column {
+    gap: 8px;
+    min-height: 0; 
+  }
+  
+  .card {
+    padding: 8px !important;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; 
+    justify-content: space-between; /* Ajuda a distribuir o conteúdo interno */
+  }
+
+  .card h2, .telemetry-card h3, .console-title, .manifold-title {
+    font-size: 9px !important;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important; 
+    padding-bottom: 2px;
+  }
+
+  /* ==========================================
+     COLUNA 1: Bateria, Ambiente, Força G (Ultra-Minimalista)
+     ========================================== */
+  
+  .telemetry-column:first-child > .card {
+    flex: 1 1 0px !important; 
+    min-height: 0 !important; 
+    overflow: hidden !important; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 10px !important; /* Menos padding vertical = mais espaço para o gráfico */
+  }
+
+  /* 1. ESCONDER TUDO O QUE NÃO INTERESSA */
+  .telemetry-column:first-child h2, 
+  .gauge-svg, 
+  .gauge-label { /* Esconde TEMPERATURA e PRESSÃO */
+    display: none !important;
+  }
+
+  /* 2. BATERIA - Números pequenos e gráfico a respirar */
+  .telemetry-column:first-child > .card:nth-child(1) .data-value {
+    font-size: 14px !important; /* Drasticamente mais pequeno! */
+    margin: 0 auto 2px auto !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* Espaço entre a voltagem e a percentagem */
+  }
+  .telemetry-column:first-child > .card:nth-child(1) .recharts-responsive-container {
+    display: block !important;
+    flex: 1 1 0px !important;
+    height: 100% !important;
+    min-height: 20px !important; /* Garante que o gráfico não desaparece */
+  }
+
+  /* 3. AMBIENTE - Limpo, Novo e Centrado */
+  .ambiente-title {
+    display: none !important; /* Esconde a palavra AMBIENTE no telemóvel */
+  }
+  
+  .ambiente-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-evenly !important; /* Afasta-os uniformemente */
+    align-items: center !important;
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .ambiente-item {
+    display: flex !important;
+    flex-direction: row !important; /* Força os números a ficarem ao lado do °C */
+    align-items: baseline !important;
+    gap: 4px !important;
+  }
+  
+  .ambiente-value {
+    font-size: 24px !important; /* Números táticos bem grandes */
+    font-weight: bold !important;
+    color: #fff !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+  }
+  
+  .ambiente-unit {
+    font-size: 12px !important;
+    color: #888 !important;
+    margin: 0 !important;
+  }
+
+  /* 4. FORÇA GZ - Ajuste perfeito */
+  .gforce-card .tape-window {
+    flex: 1 1 0px !important;
+    height: 100% !important;
+    width: 110px !important; 
+    margin: 0 auto !important;
+  }
+
+  /* ==========================================
+     COLUNA 2: IMU (A devorar o espaço vazio)
+     ========================================== */
+  .imu-card {
+    flex: 1; 
+    justify-content: flex-start;
+  }
+  
+  .imu-section {
+    flex: 1; /* Força as secções a esticarem-se verticalmente */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .imu-divider {
+    margin: 4px 0;
+  }
+
+  .imu-values {
+    font-size: 9px !important; /* Ajuste para garantir que não quebram linha */
+    gap: 4px !important;
+    margin-bottom: 2px;
+  }
+  
+  /* Gráficos em modo elástico completo */
+  .imu-section canvas, .imu-section svg {
+    flex: 1; /* Esta é a magia que os faz ocupar todo o espaço vazio! */
+    min-height: 0 !important; 
+    max-height: none !important; /* Removido o limite anterior de 110px */
+    height: 100% !important; 
+  }
+
+  /* ==========================================
+     COLUNA 3: Propulsores e Consola
+     ========================================== */
+  .rcs-card {
+    flex: none; 
+  }
+  
+  .manifolds-wrapper-vertical {
+    flex-direction: row !important; 
+    justify-content: space-around;
+    padding: 0;
+    height: auto;
+  }
+  
+  .manifold-circle {
+    transform: none !important;
+    width: 80px;
+    height: 80px;
+    margin: 5px auto;
+  }
+  
+  .thruster-nozzle {
+    width: 14px;
+    height: 14px;
+  }
+
+  .gas-plume {
+    width: 18px !important; 
+    height: 30px !important; 
+  }
+  
+  .pos-fr { top: -2px; right: -2px; }
+  .pos-fr .gas-plume { top: -28px; }
+
+  .pos-rr { bottom: -2px; right: -2px; }
+  .pos-rr .gas-plume { top: -28px; }
+
+  .pos-rl { bottom: -2px; left: -2px; }
+  .pos-rl .gas-plume { top: -28px; }
+
+  .pos-fl { top: -2px; left: -2px; }
+  .pos-fl .gas-plume { top: -28px; }
+
+  .console-card {
+    flex: 1 1 0px !important; 
+    overflow: hidden; 
+  }
+  
+  .console-window {
+    flex: 1 1 0px !important;
+    overflow-y: auto !important; 
+    font-size: 9px;
+    gap: 1px;
+    padding-right: 2px; 
+  }
+}

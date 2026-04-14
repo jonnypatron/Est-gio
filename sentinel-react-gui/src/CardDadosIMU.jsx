@@ -12,39 +12,40 @@ function CardDadosIMU({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    const topicoVel = new ROSLIB.Topic({
-      ros: ros,
-      name: '/velocidade_angular',
-      messageType: 'geometry_msgs/Vector3'
-    });
-
-    topicoVel.subscribe((msg) => {
-      setVelAngular(msg);
-      setHistVel((prev) => {
-        const novo = [...prev, { x: msg.x, y: msg.y, z: msg.z }];
-        if (novo.length > 50) novo.shift();
-        return novo;
+      const topicoImu = new ROSLIB.Topic({
+        ros: ros,
+        name: '/imu_apps',
+        messageType: 'sensor_msgs/msg/Imu',
+        throttle_rate: 50
       });
-    });
 
-    const topicoAcel = new ROSLIB.Topic({
-      ros: ros,
-      name: '/aceleracao_linear',
-      messageType: 'geometry_msgs/Vector3'
-    });
+      topicoImu.subscribe((msg) => {
+      // 1. Vamos buscar os dados aos caminhos exatos do manual ROS que enviaste!
+        const vel = msg.angular_velocity;
+        const acel = msg.linear_acceleration;
 
-    topicoAcel.subscribe((msg) => {
-      setAcelLinear(msg);
-      setHistAcel((prev) => {
-        const novo = [...prev, { x: msg.x, y: msg.y, z: msg.z }];
-        if (novo.length > 50) novo.shift();
-        return novo;
-      });
+        // 2. O cinto de segurança (Se a msg vier vazia num frame, ignoramos)
+        if (!vel || !acel) return;
+
+        setVelAngular(vel);
+        setAcelLinear(acel);
+
+      // 3. Atualizar os gráficos
+        setHistVel((prev) => {
+          const novo = [...prev, { x: vel.x, y: vel.y, z: vel.z }];
+          if (novo.length > 50) novo.shift();
+          return novo;
+        });
+
+        setHistAcel((prev) => {
+          const novo = [...prev, { x: acel.x, y: acel.y, z: acel.z }];
+          if (novo.length > 50) novo.shift();
+          return novo;
+        });
     });
 
     return () => {
-      topicoVel.unsubscribe();
-      topicoAcel.unsubscribe();
+      topicoImu.unsubscribe();
     };
   }, [ros]);
 

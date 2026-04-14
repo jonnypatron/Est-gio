@@ -9,13 +9,17 @@ function CardForcaG({ ros }) {
 
     const topicoAccel = new ROSLIB.Topic({
       ros: ros,
-      name: '/aceleracao_linear',
-      messageType: 'geometry_msgs/Vector3'
+      name: '/imu_apps',
+      messageType: 'sensor_msgs/msg/Imu',
+      throttle_rate: 50 // Proteção contra bloqueios!
     });
 
     topicoAccel.subscribe((msg) => {
-
-      const gReal = msg.z / 9.81;
+      // Vai buscar o Z dentro da estrutura correta
+      const zAccel = msg.linear_acceleration.z;
+      
+      // Converte para Força G (Divide pela gravidade 9.81)
+      const gReal = zAccel / 9.81;
       setGForce(gReal);
     });
 

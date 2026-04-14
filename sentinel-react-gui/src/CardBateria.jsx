@@ -14,7 +14,8 @@ function CardBateria({ ros }) {
     const topicoBateria = new ROSLIB.Topic({
       ros: ros,
       name: '/Battery',
-      messageType: 'sensor_msgs/msg/BatteryState'
+      messageType: 'sensor_msgs/msg/BatteryState',
+      throttle_rate: 900
     });
 
     topicoBateria.subscribe((mensagem) => {
@@ -44,11 +45,6 @@ function CardBateria({ ros }) {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Bateria</h2>
-        <span style={{ fontSize: '10px', color: '#00d66b', fontWeight: 'bold' }}>— Voltagem</span>
-      </div>
-
       <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', marginTop: '10px' }}>
         <div className="data-value" style={{ color: '#00d66b', fontSize: '28px' }}>
           {voltagem} <span style={{ fontSize: '14px', color: '#888' }}>V</span>

@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
-import CircularGauge from './CircularGauge';
 
 function CardAmbiente({ ros }) {
     const [temperatura, setTemperatura] = useState(0);
     const [pressao, setPressao] = useState(0);
 
     useEffect(() => {
+        if (!ros) return;
+
         const topicoTemperatura = new ROSLIB.Topic({
             ros: ros,
             name: '/Temperature',
-            messageType: 'sensor_msgs/msg/Temperature'
+            messageType: 'sensor_msgs/msg/Temperature',
+            throttle_rate: 50
         });
 
         const topicoPressao = new ROSLIB.Topic({
             ros: ros,
             name: '/adc/pressure',
-            messageType: 'std_msgs/msg/Float32'
+            messageType: 'std_msgs/msg/Float32',
+            throttle_rate: 50
         });
 
         topicoTemperatura.subscribe((mensagem) => {
@@ -35,22 +38,23 @@ function CardAmbiente({ ros }) {
 
     return (
         <div className="card">
-            <h2>AMBIENTE</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', alignItems: 'center', flexGrow: 1 }}>
+            {/* O h2 fica aqui caso precises dele no PC, mas vamos escondê-lo no telemóvel */}
+            <h2 className="ambiente-title">AMBIENTE</h2>
+            
+            <div className="ambiente-container">
+                <div className="ambiente-item">
+                    <span className="ambiente-value">
+                        {typeof temperatura === 'number' ? temperatura.toFixed(1) : '0.0'}
+                    </span>
+                    <span className="ambiente-unit">°C</span>
+                </div>
         
-                <CircularGauge 
-                value={temperatura} 
-                min={0} max={100} 
-                label="TEMPERATURA" unit="°C" 
-                />
-        
-                <CircularGauge 
-                value={pressao} 
-                min={0} max={20} 
-                label="PRESSÃO" unit="bar" 
-                color="#3498db"
-                />
-        
+                <div className="ambiente-item">
+                    <span className="ambiente-value" style={{ color: '#3498db' }}>
+                        {typeof pressao === 'number' ? pressao.toFixed(1) : '0.0'}
+                    </span>
+                    <span className="ambiente-unit">bar</span>
+                </div>
             </div>
         </div>
     );

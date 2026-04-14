@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import * as ROSLIB from 'roslib';
 import './index.css';
 
 import PaginaTelemetria from './PaginaTelemetria';
-import PaginaVisualizacao from './PaginaVisualizacao'; 
+import PaginaVisualizacao from './PaginaVisualizacao';
 
 function App() {
   const [status, setStatus] = useState('DESCONECTADO');
   const [statusColor, setStatusColor] = useState('#ff4d4d');
   const [ros, setRos] = useState(null);
   const [bateria, setBateria] = useState(0);
+  
+  // NOVO: Gerir a aba ativa manualmente em vez de usar o react-router
+  const [abaAtiva, setAbaAtiva] = useState('telemetria');
 
   useEffect(() => {
-    const rosConnection = new ROSLIB.Ros({ url: 'ws://localhost:9090' }); // mudar aqui para "ws://192.etc:9090"
+    const rosConnection = new ROSLIB.Ros({ url: 'ws://localhost:9090' });
 
     rosConnection.on('connection', () => {
       setStatus('LIGADO!');
@@ -41,44 +43,72 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <div className="app-wrapper">
-        <header className="mission-header">
-          <div className="header-left"></div>
+    <div className="app-wrapper">
+      <header className="mission-header">
+        <div className="header-left"></div>
 
-          <nav className="header-center navbar">
-            <NavLink to="/controlo" className="nav-link">CONTROLO</NavLink>
-            <NavLink to="/visualizacao" className="nav-link">VISUALIZAÇÃO</NavLink>
-            <NavLink to="/" className="nav-link">TELEMETRIA</NavLink>
-          </nav>
+        {/* NOVA: Navegação baseada em botões e estado (Sem NavLink) */}
+        <nav className="header-center navbar">
+          <button 
+            className={`nav-link ${abaAtiva === 'controlo' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('controlo')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            CONTROLO
+          </button>
+          <button 
+            className={`nav-link ${abaAtiva === 'visualizacao' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('visualizacao')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            VISUALIZAÇÃO
+          </button>
+          <button 
+            className={`nav-link ${abaAtiva === 'telemetria' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('telemetria')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            TELEMETRIA
+          </button>
+        </nav>
 
-          <div className="header-right">
-            <div className="status-zone">
-              <div className="status-led" style={{ backgroundColor: statusColor }}></div>
-              <span className="status-text" style={{ color: statusColor }}>{status}</span>
-            </div>
+        <div className="header-right">
+          <div className="status-zone">
+            <div className="status-led" style={{ backgroundColor: statusColor }}></div>
+            <span className="status-text" style={{ color: statusColor }}>{status}</span>
+          </div>
 
-            <div className="battery-zone">
-              <span className="battery-text">{(bateria * 100).toFixed(0)}%</span>
-              <div className="battery-icon">
-                <div className="battery-level" style={{ 
-                  width: `${bateria * 100}%`, 
-                  backgroundColor: bateria > 0.2 ? '#00d66b' : '#ff4d4d' 
-                }}></div>
-              </div>
+          <div className="battery-zone">
+            <span className="battery-text">{(bateria * 100).toFixed(0)}%</span>
+            <div className="battery-icon">
+              <div className="battery-level" style={{ 
+                width: `${bateria * 100}%`, 
+                backgroundColor: bateria > 0.2 ? '#00d66b' : '#ff4d4d' 
+              }}></div>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="content-area">
-          <Routes>
-            <Route path="/" element={<PaginaTelemetria ros={ros} />} />
-            <Route path="/visualizacao" element={<PaginaVisualizacao ros={ros} />} />
-            <Route path="/controlo" element={<div className="card">Controlo</div>} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+      {/* NOVO: A magia do "Esconderijo" (Off-screen rendering) */}
+      <main className="content-area">
+        
+        {/* As três páginas estão sempre lá, mas só uma é visível! */}
+        <div style={{ display: abaAtiva === 'telemetria' ? 'block' : 'none', height: '100%' }}>
+          <PaginaTelemetria ros={ros} />
+        </div>
+
+        <div style={{ display: abaAtiva === 'visualizacao' ? 'block' : 'none', height: '100%' }}>
+          <PaginaVisualizacao ros={ros} />
+        </div>
+
+        <div style={{ display: abaAtiva === 'controlo' ? 'block' : 'none', height: '100%' }}>
+           {/* Se ainda não tiveres o PaginaControlo.jsx criado, isto vai mostrar apenas o texto */}
+          <div className="card" style={{height: '100%'}}><h2>Controlo (Em breve)</h2></div>
+        </div>
+
+      </main>
+    </div>
   );
 }
 

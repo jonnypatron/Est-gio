@@ -1,0 +1,5 @@
+{
+  "appId": "com.teunome.sentinel",
+  "appName": "SentinelGCS",
+  "webDir": "dist"
+}

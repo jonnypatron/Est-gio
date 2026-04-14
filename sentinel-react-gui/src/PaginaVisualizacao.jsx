@@ -4,6 +4,7 @@ import { OrbitControls, Environment, ContactShadows, GizmoHelper, GizmoViewport,
 import * as ROSLIB from 'roslib';
 import * as THREE from 'three';
 import SentinelModel from './SentinelModel';
+import VideoStreamDisplay from './VideoStreamDisplay';
 
 function PaginaVisualizacao({ ros }) {
   const [rotationQuat, setRotationQuat] = useState({ x: 0, y: 0, z: 0, w: 1 });
@@ -16,24 +17,44 @@ function PaginaVisualizacao({ ros }) {
     const quatTopic = new ROSLIB.Topic({
       ros: ros,
       name: '/vvhub_odom',
-      messageType: 'nav_msgs/msg/Odometry'
+      messageType: 'nav_msgs/msg/Odometry',
+      throttle_rate: 33
     });
 
     quatTopic.subscribe((msg) => {
-      setRotationQuat(msg);
-      const threeQuat = new THREE.Quaternion(msg.x, msg.y, msg.z, msg.w);
-      const eulerOrder = new THREE.Euler().setFromQuaternion(threeQuat, 'XYZ');
-      setEuler({
-        roll: (eulerOrder.x * (180 / Math.PI)).toFixed(1),
-        pitch: (eulerOrder.y * (180 / Math.PI)).toFixed(1),
-        yaw: (eulerOrder.z * (180 / Math.PI)).toFixed(1)
-      });
+      try {
+        // 1. Ir buscar o Quaternion ao fundo da mensagem de Odometria
+        const quat = msg.pose.pose.orientation;
+        
+        // 2. O CINTO DE SEGURANÇA (A função que perguntaste onde colocar)
+        // Se não houver quat, ou se o X for NaN (Not a Number) ou undefined, bazamos daqui!
+        if (!quat || typeof quat.x === 'undefined' || isNaN(quat.x)) {
+          return;
+        }
+
+        // 3. Agora sim, guardamos APENAS a rotação limpa
+        setRotationQuat(quat); 
+
+        // 4. Matemática para o HUD
+        const threeQuat = new THREE.Quaternion(quat.x, quat.y, quat.z, quat.w);
+        const eulerOrder = new THREE.Euler().setFromQuaternion(threeQuat, 'XYZ');
+        
+        setEuler({
+          roll: (eulerOrder.x * (180 / Math.PI)).toFixed(1),
+          pitch: (eulerOrder.y * (180 / Math.PI)).toFixed(1),
+          yaw: (eulerOrder.z * (180 / Math.PI)).toFixed(1)
+        });
+
+      } catch (error) {
+        console.warn("Erro a ler Odometria", error);
+      }
     });
 
     const thrusterTopic = new ROSLIB.Topic({
       ros: ros,
-      name: '/propulsores_array',
-      messageType: 'std_msgs/Int32MultiArray'
+      name: '/thrusters/u',
+      messageType: 'std_msgs/msg/Int32MultiArray',
+      throttle_rate: 30
     });
     thrusterTopic.subscribe((msg) => setThrusters(msg.data));
 
@@ -47,12 +68,11 @@ function PaginaVisualizacao({ ros }) {
     <div className="viz-container">
       
       <div className="viz-card video-card" style={{ position: 'relative' }}>
-        <iframe 
-          src="http://localhost:8889/live/" 
-          style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', top: 0, left: 0, zIndex: 1 }}
-          scrolling="no"
-          title="Sentinel WebRTC Feed"
-        />
+          <VideoStreamDisplay 
+            videoWsUrl="ws://192.168.1.100:9092" 
+            topic="/camera/compressed" 
+            cameraLabel="Câmara Sentinel" 
+          />
         
         <div className="hud-thrusters" style={{ position: 'absolute', zIndex: 10, top: '15px', left: '15px' }}>
           <p className="hud-label">THRUSTER ARRAY</p>

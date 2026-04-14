@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SentinelGCS</string>
+    <string name="title_activity_main">SentinelGCS</string>
+    <string name="package_name">com.teunome.sentinel</string>
+    <string name="custom_url_scheme">com.teunome.sentinel</string>
+</resources>

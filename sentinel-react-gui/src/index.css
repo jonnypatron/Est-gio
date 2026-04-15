@@ -375,7 +375,7 @@ html, body {
 .forward-mark {
   position: absolute;
   top: 5px;
-  font-size: 9px;
+  font-size: 6px;
   color: #555;
   font-weight: bold;
   letter-spacing: 2px;
@@ -734,7 +734,7 @@ html, body {
   /* 3. NOVA GRELHA (3 COLUNAS) COM PROTEÇÃO ANTI-STRETCH */
   .telemetry-dashboard {
     padding: 5px;
-    gap: 8px;
+    gap: 6px; 
     height: calc(100vh - 35px);
     grid-template-columns: 1fr 1.3fr 1fr; 
   }
@@ -745,11 +745,14 @@ html, body {
   }
   
   .card {
+    background: #141416 !important; /* Um cinza incrivelmente escuro, quase fundido com o ecrã */
+    border: 1px solid rgba(255, 255, 255, 0.03) !important; /* Uma borda quase fantasma, só para não colar 100% */
+    border-radius: 0px !important; /* Cantos retos militares, aproveita mais espaço */
     padding: 8px !important;
     display: flex;
     flex-direction: column;
     min-height: 0; 
-    justify-content: space-between; /* Ajuda a distribuir o conteúdo interno */
+    justify-content: space-between;
   }
 
   .card h2, .telemetry-card h3, .console-title, .manifold-title {
@@ -820,9 +823,9 @@ html, body {
   }
   
   .ambiente-value {
-    font-size: 24px !important; /* Números táticos bem grandes */
+    font-size: 18px !important; /* Números táticos bem grandes */
     font-weight: bold !important;
-    color: #fff !important;
+    color: #aaa !important;
     line-height: 1 !important;
     margin: 0 !important;
   }
@@ -834,11 +837,53 @@ html, body {
   }
 
   /* 4. FORÇA GZ - Ajuste perfeito */
+  /* ==========================================
+     4. FORÇA GZ (Fita Analógica Completa)
+     ========================================== */
+  .gforce-card {
+    padding: 0 !important; /* Remove o padding interior do cartão */
+    overflow: hidden !important;
+  }
+  
   .gforce-card .tape-window {
     flex: 1 1 0px !important;
     height: 100% !important;
-    width: 110px !important; 
-    margin: 0 auto !important;
+    width: 100% !important; /* Estica de ponta a ponta do cartão */
+    margin: 0 !important;
+    border: none !important; /* Fica integrado sem bordas duplas */
+    border-radius: 0 !important;
+  }
+
+  /* Emagrecer a tira verde */
+  .tape-center-mark {
+    height: 18px !important; /* Super fina */
+    padding-left: 8px !important;
+    border-width: 1px !important; /* Bordas mais subtis */
+  }
+
+  /* Texto muito mais pequeno e focado */
+  .current-g-value {
+    font-size: 12px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+  }
+
+  /* Ajustar o espaçamento dos traços para bater certo com os 40px do React */
+  .tape-tick {
+    height: 40px !important; 
+    padding: 0 15px !important;
+  }
+
+  .tick-label {
+    font-size: 10px !important;
+  }
+
+  .tick-line {
+    width: 8px !important; /* Traços um pouco menores */
+  }
+  
+  .zero-line {
+    width: 14px !important;
   }
 
   /* ==========================================
@@ -890,43 +935,98 @@ html, body {
   
   .manifold-circle {
     transform: none !important;
-    width: 80px;
-    height: 80px;
+    width: 60px !important; 
+    height: 60px !important;
     margin: 5px auto;
   }
   
   .thruster-nozzle {
-    width: 14px;
-    height: 14px;
+    width: 10px !important;
+    height: 10px !important;
   }
 
   .gas-plume {
-    width: 18px !important; 
-    height: 30px !important; 
+    width: 12px !important; 
+    height: 16px !important; /* Reduzido drasticamente para não vazar */
   }
   
   .pos-fr { top: -2px; right: -2px; }
-  .pos-fr .gas-plume { top: -28px; }
+  .pos-fr .gas-plume { top: -16px; } /* Ajustado à nova altura da chama */
 
   .pos-rr { bottom: -2px; right: -2px; }
-  .pos-rr .gas-plume { top: -28px; }
+  .pos-rr .gas-plume { top: -16px; }
 
   .pos-rl { bottom: -2px; left: -2px; }
-  .pos-rl .gas-plume { top: -28px; }
+  .pos-rl .gas-plume { top: -16px; }
 
   .pos-fl { top: -2px; left: -2px; }
-  .pos-fl .gas-plume { top: -28px; }
+  .pos-fl .gas-plume { top: -16px; }
 
   .console-card {
     flex: 1 1 0px !important; 
-    overflow: hidden; 
+    overflow: hidden !important; 
   }
   
   .console-window {
     flex: 1 1 0px !important;
     overflow-y: auto !important; 
-    font-size: 9px;
-    gap: 1px;
+    font-size: 10px !important; /* Ligeiramente maior pois poupámos espaço! */
+    line-height: 1.2 !important;
+    gap: 3px !important; /* Espaço entre cada linha de log */
     padding-right: 2px; 
+    display: flex;
+    flex-direction: column;
+  }
+
+  .log-line {
+    display: flex;
+    align-items: flex-start !important; /* Mantém as tags no topo se o texto descer */
+    gap: 4px !important;
+  }
+
+  /* Blindar as etiquetas para não serem esmagadas */
+  .log-time, .log-type {
+    flex-shrink: 0 !important; /* NUNCA encolher isto */
+    font-weight: bold;
+  }
+
+  .log-text {
+    word-break: break-word !important; /* Quebra as palavras longas (ex: coordenadas) sem rebentar o ecrã */
+    flex: 1; /* Ocupa o resto do espaço */
+  }
+
+  /* ==========================================
+     PÁGINA DE VISUALIZAÇÃO (Ecrã Total e HUDs táticos)
+     ========================================== */
+  .viz-container {
+    /* 1. Esticar para ocupar o espaço morto em baixo */
+    height: calc(100vh - 35px) !important; /* 100% do ecrã menos o header */
+    width: 100% !important;
+    padding: 6px !important; /* Menos margem exterior */
+    gap: 6px !important; /* Menos espaço entre o vídeo e o 3D */
+    margin: 0 !important;
+  }
+
+  .viz-card {
+    height: 100% !important; /* Obriga o cartão a colar ao fundo */
+    background: #141416 !important; /* Mesma cor tática da telemetria */
+    border: 1px solid rgba(255, 255, 255, 0.03) !important;
+    border-radius: 0 !important; /* Cantos retos militares */
+  }
+
+  /* 2. Encolher HUD do Vídeo (Thrusters) */
+  .hud-thrusters {
+    transform: scale(0.65) !important; /* Reduz para 65% do tamanho original */
+    transform-origin: top left !important; /* Encolhe em direção ao canto */
+    top: 10px !important;
+    left: 10px !important;
+  }
+
+  /* 3. Encolher HUD do 3D (Roll/Pitch/Yaw) */
+  .modern-hud {
+    transform: scale(0.65) !important; /* Reduz para 65% */
+    transform-origin: bottom left !important; /* Encolhe em direção ao fundo esquerdo */
+    bottom: 10px !important;
+    left: 10px !important;
   }
 }

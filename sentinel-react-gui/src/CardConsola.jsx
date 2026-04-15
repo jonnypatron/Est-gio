@@ -8,15 +8,13 @@ function CardConsola({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    // Subscrever ao tópico de Logs
     const topicoLogs = new ROSLIB.Topic({
       ros: ros,
       name: '/logs',
       messageType: 'std_msgs/msg/String',
-      throttle_rate: 500 // 2 vezes por segundo é suficiente para logs
+      throttle_rate: 500 
     });
 
-    // Subscrever ao tópico de Tasks (Tarefas)
     const topicoTasks = new ROSLIB.Topic({
       ros: ros,
       name: '/tasks',
@@ -25,11 +23,11 @@ function CardConsola({ ros }) {
     });
 
     const adicionarLog = (mensagem, tipo) => {
-      const hora = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      // 1. Tirámos os segundos! Agora só mostra HH:MM
+      const hora = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
       const novoLog = { hora, texto: mensagem, tipo };
 
       setLogs((prevLogs) => {
-        // Limitar a 50 linhas para poupar a memória do browser
         const atualizados = [...prevLogs, novoLog];
         if (atualizados.length > 50) {
           atualizados.shift(); 
@@ -47,7 +45,6 @@ function CardConsola({ ros }) {
     };
   }, [ros]);
 
-  // Auto-scroll para a última mensagem
   useEffect(() => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
@@ -69,7 +66,8 @@ function CardConsola({ ros }) {
         {logs.map((log, index) => (
           <div key={index} className={`log-line ${log.tipo.toLowerCase()}`}>
             <span className="log-time">[{log.hora}]</span>
-            <span className="log-type">[{log.tipo}]</span>
+            {/* 2. Mostra apenas a 1ª letra: 'L' para LOG, 'T' para TASK */}
+            <span className="log-type">[{log.tipo === 'LOG' ? 'L' : 'T'}]</span>
             <span className="log-text">{log.texto}</span>
           </div>
         ))}

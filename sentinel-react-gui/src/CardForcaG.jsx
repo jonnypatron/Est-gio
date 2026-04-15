@@ -11,14 +11,11 @@ function CardForcaG({ ros }) {
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',
-      throttle_rate: 50 // Proteção contra bloqueios!
+      throttle_rate: 50
     });
 
     topicoAccel.subscribe((msg) => {
-      // Vai buscar o Z dentro da estrutura correta
       const zAccel = msg.linear_acceleration.z;
-      
-      // Converte para Força G (Divide pela gravidade 9.81)
       const gReal = zAccel / 9.81;
       setGForce(gReal);
     });
@@ -28,11 +25,13 @@ function CardForcaG({ ros }) {
 
   const displayG = Math.max(-3, Math.min(3, gForce));
 
-  const tapeOffset = displayG * 60; 
+  // Reduzido de 60 para 40 para a fita caber melhor no ecrã mobile!
+  const tapeOffset = displayG * 40; 
 
   return (
     <div className="card gforce-card">
-      <h2>FORÇA Gz</h2>
+      {/* Escondemos o título para dar todo o espaço à fita */}
+      <h2 style={{ display: 'none' }}>FORÇA Gz</h2>
 
       <div className="tape-window">
         <div className="tape-center-mark">

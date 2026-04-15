@@ -1,5 +1,9 @@
 {
   "appId": "com.teunome.sentinel",
   "appName": "SentinelGCS",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "http"
+  }
 }

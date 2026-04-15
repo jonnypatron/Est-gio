@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
 import { ResponsiveContainer, LineChart, Line, YAxis, CartesianGrid } from 'recharts';
 
@@ -12,36 +12,35 @@ function CardDadosIMU({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-      const topicoImu = new ROSLIB.Topic({
-        ros: ros,
-        name: '/imu_apps',
-        messageType: 'sensor_msgs/msg/Imu',
-        throttle_rate: 50
+    // 1. Throttle a 150ms (~6.6 Hz). Suaviza os números e a velocidade da linha.
+    const topicoImu = new ROSLIB.Topic({
+      ros: ros,
+      name: '/imu_apps',
+      messageType: 'sensor_msgs/msg/Imu',
+      throttle_rate: 150 
+    });
+
+    topicoImu.subscribe((msg) => {
+      const vel = msg.angular_velocity;
+      const acel = msg.linear_acceleration;
+
+      if (!vel || !acel) return;
+
+      setVelAngular(vel);
+      setAcelLinear(acel);
+
+      // 2. Aumentámos para 60 pontos. (60 * 150ms = 9 segundos de janela de visualização)
+      setHistVel((prev) => {
+        const novo = [...prev, { x: vel.x, y: vel.y, z: vel.z }];
+        if (novo.length > 60) novo.shift();
+        return novo;
       });
 
-      topicoImu.subscribe((msg) => {
-      // 1. Vamos buscar os dados aos caminhos exatos do manual ROS que enviaste!
-        const vel = msg.angular_velocity;
-        const acel = msg.linear_acceleration;
-
-        // 2. O cinto de segurança (Se a msg vier vazia num frame, ignoramos)
-        if (!vel || !acel) return;
-
-        setVelAngular(vel);
-        setAcelLinear(acel);
-
-      // 3. Atualizar os gráficos
-        setHistVel((prev) => {
-          const novo = [...prev, { x: vel.x, y: vel.y, z: vel.z }];
-          if (novo.length > 50) novo.shift();
-          return novo;
-        });
-
-        setHistAcel((prev) => {
-          const novo = [...prev, { x: acel.x, y: acel.y, z: acel.z }];
-          if (novo.length > 50) novo.shift();
-          return novo;
-        });
+      setHistAcel((prev) => {
+        const novo = [...prev, { x: acel.x, y: acel.y, z: acel.z }];
+        if (novo.length > 60) novo.shift();
+        return novo;
+      });
     });
 
     return () => {
@@ -50,14 +49,25 @@ function CardDadosIMU({ ros }) {
   }, [ros]);
 
   const ImuChart = ({ data }) => (
-    <div style={{ width: '100%', height: '80px', marginTop: '5px' }}>
+    // flex: 1 obriga o gráfico a empurrar-se para preencher todo o vazio vertical
+    <div style={{ flex: 1, width: '100%', minHeight: '50px', marginTop: '5px' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="2 2" stroke="#222" vertical={false} />
-          <YAxis domain={['auto', 'auto']} hide />
-          <Line type="monotone" dataKey="x" stroke="#ff4d4d" strokeWidth={2} dot={false} isAnimationActive={false} />
-          <Line type="monotone" dataKey="y" stroke="#00d66b" strokeWidth={2} dot={false} isAnimationActive={false} />
-          <Line type="monotone" dataKey="z" stroke="#3498db" strokeWidth={2} dot={false} isAnimationActive={false} />
+          
+          {/* 3. Eixo Y Minimalista, encostado à direita para não empurrar os gráficos */}
+          <YAxis 
+            domain={['auto', 'auto']} 
+            width={22} 
+            orientation="right"
+            tick={{ fontSize: 8, fill: '#666', fontFamily: 'monospace' }} 
+            tickLine={false} 
+            axisLine={false} 
+          />
+          
+          <Line type="monotone" dataKey="x" stroke="#ff4d4d" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="y" stroke="#00d66b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="z" stroke="#3498db" strokeWidth={1.5} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -65,11 +75,12 @@ function CardDadosIMU({ ros }) {
 
   return (
     <div className="card imu-card">
-      <h2>DADOS FÍSICOS (IMU)</h2>
+      {/* Escondemos o título principal para poupar espaço em mobile, mantendo apenas os títulos de secção */}
+      <h2 style={{ display: 'none' }}>DADOS FÍSICOS (IMU)</h2>
 
-      <div className="imu-section">
+      <div className="imu-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="imu-header">
-          <span className="imu-title">Vel. Angular (rad/s)</span>
+          <span className="imu-title">VEL. ANGULAR (RAD/S)</span>
           <div className="imu-values">
             <span style={{ color: '#ff4d4d' }}>X: {velAngular.x.toFixed(2)}</span>
             <span style={{ color: '#00d66b' }}>Y: {velAngular.y.toFixed(2)}</span>
@@ -79,11 +90,11 @@ function CardDadosIMU({ ros }) {
         <ImuChart data={histVel} />
       </div>
 
-      <div className="imu-divider"></div>
+      <div className="imu-divider" style={{ margin: '8px 0' }}></div>
 
-      <div className="imu-section">
+      <div className="imu-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="imu-header">
-          <span className="imu-title">Acel. Linear (m/s²)</span>
+          <span className="imu-title">ACEL. LINEAR (M/S²)</span>
           <div className="imu-values">
             <span style={{ color: '#ff4d4d' }}>X: {acelLinear.x.toFixed(2)}</span>
             <span style={{ color: '#00d66b' }}>Y: {acelLinear.y.toFixed(2)}</span>

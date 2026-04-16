@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+
 import { ResponsiveContainer, LineChart, Line, YAxis, CartesianGrid } from 'recharts';
 
 function CardDadosIMU({ ros }) {
@@ -13,7 +13,7 @@ function CardDadosIMU({ ros }) {
     if (!ros) return;
 
     // 1. Throttle a 150ms (~6.6 Hz). Suaviza os números e a velocidade da linha.
-    const topicoImu = new ROSLIB.Topic({
+    const topicoImu = new window.ROSLIB.Topic({
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+
 
 function CardPropulsores({ ros }) {
   const [thrusters, setThrusters] = useState(new Array(8).fill(0));
@@ -7,7 +7,7 @@ function CardPropulsores({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    const topico = new ROSLIB.Topic({
+    const topico = new window.ROSLIB.Topic({
       ros: ros,
       name: '/thrusters/u',
       messageType: 'std_msgs/msg/Int32MultiArray',

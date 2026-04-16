@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+
 
 function CardAmbiente({ ros }) {
     const [temperatura, setTemperatura] = useState(0);
@@ -8,14 +8,14 @@ function CardAmbiente({ ros }) {
     useEffect(() => {
         if (!ros) return;
 
-        const topicoTemperatura = new ROSLIB.Topic({
+        const topicoTemperatura = new window.ROSLIB.Topic({
             ros: ros,
             name: '/Temperature',
             messageType: 'sensor_msgs/msg/Temperature',
             throttle_rate: 50
         });
 
-        const topicoPressao = new ROSLIB.Topic({
+        const topicoPressao = new window.ROSLIB.Topic({
             ros: ros,
             name: '/adc/pressure',
             messageType: 'std_msgs/msg/Float32',

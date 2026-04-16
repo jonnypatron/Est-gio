@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+
 
 function CardForcaG({ ros }) {
   const [gForce, setGForce] = useState(0.0);
@@ -7,7 +7,7 @@ function CardForcaG({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    const topicoAccel = new ROSLIB.Topic({
+    const topicoAccel = new window.ROSLIB.Topic({
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',

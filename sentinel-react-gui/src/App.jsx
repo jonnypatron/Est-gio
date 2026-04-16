@@ -4,6 +4,7 @@ import './index.css';
 
 import PaginaTelemetria from './PaginaTelemetria';
 import PaginaVisualizacao from './PaginaVisualizacao';
+import PaginaControlo from './PaginaControlo';
 
 function App() {
   const [status, setStatus] = useState('DESCONECTADO');
@@ -103,10 +104,8 @@ function App() {
         </div>
 
         <div style={{ display: abaAtiva === 'controlo' ? 'block' : 'none', height: '100%' }}>
-           {/* Se ainda não tiveres o PaginaControlo.jsx criado, isto vai mostrar apenas o texto */}
-          <div className="card" style={{height: '100%'}}><h2>Controlo (Em breve)</h2></div>
+          <PaginaControlo ros={ros} />
         </div>
-
       </main>
     </div>
   );

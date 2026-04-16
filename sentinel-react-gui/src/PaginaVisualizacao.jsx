@@ -1,7 +1,6 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, GizmoHelper, GizmoViewport, Grid } from '@react-three/drei';
-import * as ROSLIB from 'roslib';
 import * as THREE from 'three';
 import SentinelModel from './SentinelModel';
 import VideoStreamDisplay from './VideoStreamDisplay';
@@ -14,7 +13,7 @@ function PaginaVisualizacao({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    const quatTopic = new ROSLIB.Topic({
+    const quatTopic = new window.ROSLIB.Topic({
       ros: ros,
       name: '/vvhub_odom',
       messageType: 'nav_msgs/msg/Odometry',
@@ -50,7 +49,7 @@ function PaginaVisualizacao({ ros }) {
       }
     });
 
-    const thrusterTopic = new ROSLIB.Topic({
+    const thrusterTopic = new window.ROSLIB.Topic({
       ros: ros,
       name: '/thrusters/u',
       messageType: 'std_msgs/msg/Int32MultiArray',

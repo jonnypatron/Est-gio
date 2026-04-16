@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import * as ROSLIB from 'roslib';
+
 
 function CardConsola({ ros }) {
   const [logs, setLogs] = useState([]);
@@ -8,14 +8,14 @@ function CardConsola({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    const topicoLogs = new ROSLIB.Topic({
+    const topicoLogs = new window.ROSLIB.Topic({
       ros: ros,
       name: '/logs',
       messageType: 'std_msgs/msg/String',
       throttle_rate: 500 
     });
 
-    const topicoTasks = new ROSLIB.Topic({
+    const topicoTasks = new window.ROSLIB.Topic({
       ros: ros,
       name: '/tasks',
       messageType: 'std_msgs/msg/String',

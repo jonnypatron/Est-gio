@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+
 import MiniChart from './MiniChart';
 
 function CardBateria({ ros }) {
@@ -11,7 +11,7 @@ function CardBateria({ ros }) {
   useEffect(() => {
     if (!ros) return;
 
-    const topicoBateria = new ROSLIB.Topic({
+    const topicoBateria = new window.ROSLIB.Topic({
       ros: ros,
       name: '/Battery',
       messageType: 'sensor_msgs/msg/BatteryState',

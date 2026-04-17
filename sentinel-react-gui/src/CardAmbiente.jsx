@@ -12,7 +12,7 @@ function CardAmbiente({ ros }) {
             ros: ros,
             name: '/Temperature',
             messageType: 'sensor_msgs/msg/Temperature',
-            throttle_rate: 50
+            throttle_rate: 200
         });
 
         const topicoPressao = new window.ROSLIB.Topic({

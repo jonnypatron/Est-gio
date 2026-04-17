@@ -14,7 +14,14 @@ function CardPropulsores({ ros }) {
       throttle_rate: 30
     });
 
-    topico.subscribe((msg) => setThrusters(msg.data));
+    topico.subscribe((msg) => {
+      // Se não houver mensagem, não houver dados, ou a lista tiver menos de 8 motores, ignora!
+      if (!msg || !msg.data || msg.data.length < 8) {
+        return; 
+      }
+      
+      setThrusters(msg.data);
+    });
 
     return () => topico.unsubscribe();
   }, [ros]);

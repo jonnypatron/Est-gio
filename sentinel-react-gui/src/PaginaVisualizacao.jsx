@@ -22,16 +22,21 @@ function PaginaVisualizacao({ ros }) {
 
     quatTopic.subscribe((msg) => {
       try {
-        // 1. Ir buscar o Quaternion ao fundo da mensagem de Odometria
+        // 🛡️ O ESCUDO DA ODOMETRIA (Novo)
+        // Antes de tentar ler, verifica se toda a "árvore" existe
+        if (!msg || !msg.pose || !msg.pose.pose || !msg.pose.pose.orientation) {
+          return; // Se faltar alguma coisa, ignora esta mensagem e sai!
+        }
+
+        // 1. Ir buscar o Quaternion (agora 100% seguro)
         const quat = msg.pose.pose.orientation;
         
-        // 2. O CINTO DE SEGURANÇA (A função que perguntaste onde colocar)
-        // Se não houver quat, ou se o X for NaN (Not a Number) ou undefined, bazamos daqui!
-        if (!quat || typeof quat.x === 'undefined' || isNaN(quat.x)) {
+        // 2. O CINTO DE SEGURANÇA ORIGINAL
+        if (typeof quat.x === 'undefined' || isNaN(quat.x)) {
           return;
         }
 
-        // 3. Agora sim, guardamos APENAS a rotação limpa
+        // 3. Guardamos APENAS a rotação limpa
         setRotationQuat(quat); 
 
         // 4. Matemática para o HUD

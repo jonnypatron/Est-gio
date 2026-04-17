@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+// ⚠️ IMPORT DO ROSLIB APAGADO DAQUI!
 import './index.css';
 
 import PaginaTelemetria from './PaginaTelemetria';
@@ -12,23 +12,29 @@ function App() {
   const [ros, setRos] = useState(null);
   const [bateria, setBateria] = useState(0);
   
-  // NOVO: Gerir a aba ativa manualmente em vez de usar o react-router
   const [abaAtiva, setAbaAtiva] = useState('telemetria');
 
   useEffect(() => {
-    const rosConnection = new ROSLIB.Ros({ url: 'ws://10.0.2.2:9090' });
+    // Agora usa o window.ROSLIB que vem do index.html
+    const rosConnection = new window.ROSLIB.Ros({ url: 'ws://10.0.2.2:9090' });
 
     rosConnection.on('connection', () => {
       setStatus('LIGADO!');
       setStatusColor('#00d66b');
       setRos(rosConnection);
 
-      const batteryTopic = new ROSLIB.Topic({
+      const batteryTopic = new window.ROSLIB.Topic({
         ros: rosConnection,
         name: '/Battery',
         messageType: 'sensor_msgs/msg/BatteryState'
       });
-      batteryTopic.subscribe((msg) => setBateria(msg.percentage));
+      
+      batteryTopic.subscribe((msg) => {
+        // Escudo básico para a bateria também
+        if (msg && typeof msg.percentage !== 'undefined') {
+          setBateria(msg.percentage);
+        }
+      });
     });
 
     rosConnection.on('error', () => {
@@ -43,12 +49,15 @@ function App() {
     });
   }, []);
 
+  // ESTILOS DE ESCONDERIJO QUE NÃO PARTEM OS GRÁFICOS
+  const estiloVisivel = { display: 'block', height: '100%', width: '100%' };
+  const estiloEscondido = { position: 'absolute', top: '-9999px', left: '-9999px', visibility: 'hidden' };
+
   return (
     <div className="app-wrapper">
       <header className="mission-header">
         <div className="header-left"></div>
 
-        {/* NOVA: Navegação baseada em botões e estado (Sem NavLink) */}
         <nav className="header-center navbar">
           <button 
             className={`nav-link ${abaAtiva === 'controlo' ? 'active' : ''}`}
@@ -91,19 +100,18 @@ function App() {
         </div>
       </header>
 
-      {/* NOVO: A magia do "Esconderijo" (Off-screen rendering) */}
-      <main className="content-area">
+      <main className="content-area" style={{ position: 'relative', overflow: 'hidden' }}>
         
-        {/* As três páginas estão sempre lá, mas só uma é visível! */}
-        <div style={{ display: abaAtiva === 'telemetria' ? 'block' : 'none', height: '100%' }}>
+        {/* A aplicação dos novos estilos em vez do simples display: none */}
+        <div style={abaAtiva === 'telemetria' ? estiloVisivel : estiloEscondido}>
           <PaginaTelemetria ros={ros} />
         </div>
 
-        <div style={{ display: abaAtiva === 'visualizacao' ? 'block' : 'none', height: '100%' }}>
+        <div style={abaAtiva === 'visualizacao' ? estiloVisivel : estiloEscondido}>
           <PaginaVisualizacao ros={ros} />
         </div>
 
-        <div style={{ display: abaAtiva === 'controlo' ? 'block' : 'none', height: '100%' }}>
+        <div style={abaAtiva === 'controlo' ? estiloVisivel : estiloEscondido}>
           <PaginaControlo ros={ros} />
         </div>
       </main>

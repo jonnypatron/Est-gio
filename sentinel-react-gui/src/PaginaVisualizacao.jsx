@@ -80,7 +80,7 @@ function PaginaVisualizacao({ ros, isActive }) {
       {/* O resto do return mantém-se EXATAMENTE IGUAL ao que tinhas */}
       <div className="viz-card video-card" style={{ position: 'relative' }}>
           <VideoStreamDisplay 
-            videoWsUrl="ws://192.168.1.100:9092" 
+            videoWsUrl="ws://172.18.134.174:9092" 
             topic="/camera/compressed" 
             cameraLabel="Câmara Sentinel" 
           />

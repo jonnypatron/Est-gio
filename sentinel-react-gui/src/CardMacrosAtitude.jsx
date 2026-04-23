@@ -55,7 +55,7 @@ function CardMacrosAtitude({ ros, isActive }) {
     <div className="card">
       <div className="macro-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <h3 className="card-title" style={{ margin: 0 }}>ATTITUDE</h3>
-        <div style={{ fontFamily: 'monospace', fontSize: '13px', color: '#a0a0a0', backgroundColor: '#222', padding: '5px 10px', borderRadius: '6px' }}>
+        <div className="raw-data-badge">
             <span style={{ color: '#ff4d4d' }}>X: {velAngular.x.toFixed(2)} </span>
             <span style={{ color: '#00d66b' }}>Y: {velAngular.y.toFixed(2)} </span>
             <span style={{ color: '#3498db' }}>Z: {velAngular.z.toFixed(2)}</span>

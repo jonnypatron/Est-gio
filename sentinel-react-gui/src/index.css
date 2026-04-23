@@ -927,6 +927,42 @@ html, body {
   filter: hue-rotate(110deg) brightness(1.2); /* MÁGICA: Transforma o branco em verde mint */
 }
 
+.reset-side-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+  /* Forçar as cores escuras contra qualquer regra global */
+  background-color: #181818 !important; 
+  color: #f1c40f !important; /* Amarelo sistema */
+  border: 1px solid #333 !important;
+  border-left: 3px solid #f1c40f !important; /* Sotaque lateral amarelo */
+  
+  border-radius: 8px !important;
+  font-weight: 900 !important;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  padding: 4px !important;
+  
+  /* Sombra interior para parecer um botão encastrado no painel */
+  box-shadow: inset 0px 4px 10px rgba(0,0,0,0.4), 0px 2px 4px rgba(0,0,0,0.5) !important;
+  transition: all 0.1s ease-in-out;
+}
+
+/* Efeito de Clique: O botão acende a amarelo! */
+.reset-side-btn:active {
+  background-color: #f1c40f !important;
+  color: #000 !important;
+  border-color: #f1c40f !important;
+}
+
+.reset-icon {
+  font-size: 1.4rem;
+  margin-bottom: 2px;
+  font-weight: bold;
+}
 
 /* ==========================================================================
    TABLET / MOBILE LANDSCAPE MODE (Ex: OnePlus Nord N10 5G - 912x412px)
@@ -1254,9 +1290,13 @@ html, body {
   }
 
   .controlo-grid {
-    /* 40% Segurança | 60% Modos de Voo */
-    grid-template-columns: 4fr 6fr; 
-    gap: 6px; /* Reduzimos os buracos para ganhar ecrã */
+    grid-template-columns: 1fr 1fr; /* Esquerda (botoes) e Direita (motores) lado a lado */
+    gap: 8px; 
+    margin-bottom: 8px;
+  }
+
+  .controlo-esquerdo {
+    gap: 6px; /* Botoes mais juntinhos no telemovel */
   }
 
   .kill-switch-container {
@@ -1265,14 +1305,14 @@ html, body {
 
   /* 2. AS MACROS (Linha 2) */
   .macros-container {
-    grid-column: 1 / -1; /* Ocupa a largura toda da grelha pai */
-    grid-template-columns: 1fr 1fr; /* Atitude à esquerda, Posição à direita! */
-    gap: 8px; 
+    grid-column: 1 / -1; 
+    grid-template-columns: 1fr 1fr 65px; /* A 3ª coluna fica com 65px para não roubar muito espaço */
+    gap: 6px; 
   }
 
   /* 3. EMAGRECIMENTO DOS CARTÕES (Cortar o desperdício de espaço) */
   .kill-switch-card, .modo-voo-card, .card {
-    padding:4px 8px; /* Margens interiores muito curtas */
+    padding:6px 8px; /* Margens interiores muito curtas */
   }
 
   /* Títulos pequeninos mas legíveis */
@@ -1284,14 +1324,15 @@ html, body {
 
   /* 4. BOTÕES DA LINHA 1 (Segurança e Modos) */
   .kill-switch-actions {
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
+    gap: 6px;
   }
 
   .btn-arm, .btn-kill {
-    padding: 4px;
-    font-size: 0.8rem;
+    padding: 8px 4px;
+    font-size: 0.85rem;
+    border-radius: 6px;
   }
+
 
   .modo-selector {
     padding: 2px;
@@ -1324,9 +1365,28 @@ html, body {
     font-size: 0.8rem;
   }
 
+  .reset-side-btn {
+    font-size: 0.65rem !important; /* Letra ajustada para caber bem */
+    border-radius: 6px !important;
+  }
+
+  .reset-icon {
+    font-size: 1.1rem !important;
+  }
+
   .macro-card-header {
-    padding-bottom: 2px; /* Super compacto no telemóvel */
+    padding-bottom: 2px;
     margin-bottom: 4px;
+    display: flex;
+    flex-direction: row !important; /* FORÇA os valores a ficarem ao lado do título! */
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .raw-data-badge {
+    font-size: 8px; /* Letra mais pequena para caber na mesma linha */
+    padding: 2px 4px;
+    letter-spacing: -0.5px;
   }
 
   .macro-card-header .card-title {

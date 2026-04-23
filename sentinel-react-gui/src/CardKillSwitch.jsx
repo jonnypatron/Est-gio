@@ -40,20 +40,12 @@ function CardKillSwitch({ ros }) {
   };
 
   return (
-    <div className="card kill-switch-card" style={{ height: '100%', padding: '15px' }}>
-      <div className="kill-switch-actions" style={{ display: 'flex', gap: '15px', height: '100%' }}>
-        <button 
-          className="btn-arm" 
-          onClick={handleArm}
-          style={{ flex: 1, padding: '25px', fontSize: '1.4rem', fontWeight: '900', borderRadius: '12px' }}
-        >
+    <div className="card kill-switch-card">
+      <div className="kill-switch-actions">
+        <button className="btn-arm" onClick={handleArm}>
           🔓 OPEN ALL
         </button>
-        <button 
-          className="btn-kill" 
-          onClick={handleKill}
-          style={{ flex: 1, padding: '25px', fontSize: '1.4rem', fontWeight: '900', borderRadius: '12px' }}
-        >
+        <button className="btn-kill" onClick={handleKill}>
           🛑 CLOSE ALL
         </button>
       </div>

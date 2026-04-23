@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { ResponsiveContainer, LineChart, Line, YAxis, CartesianGrid } from 'recharts';
 
-function CardDadosIMU({ ros }) {
+function CardDadosIMU({ ros, isActive }) {
   const [velAngular, setVelAngular] = useState({ x: 0, y: 0, z: 0 });
   const [acelLinear, setAcelLinear] = useState({ x: 0, y: 0, z: 0 });
 
   const [histVel, setHistVel] = useState([]);
   const [histAcel, setHistAcel] = useState([]);
+
+  const isActiveRef = useRef(isActive);
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (!ros) return;
@@ -17,10 +22,11 @@ function CardDadosIMU({ ros }) {
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',
-      throttle_rate: 150 
+      throttle_rate: 40
     });
 
     topicoImu.subscribe((msg) => {
+      if (!isActiveRef.current) return;
       const vel = msg.angular_velocity;
       const acel = msg.linear_acceleration;
 
@@ -76,11 +82,11 @@ function CardDadosIMU({ ros }) {
   return (
     <div className="card imu-card">
       {/* Escondemos o título principal para poupar espaço em mobile, mantendo apenas os títulos de secção */}
-      <h2 style={{ display: 'none' }}>DADOS FÍSICOS (IMU)</h2>
+      <h2 style={{ display: 'none' }}>PHYSICAL DATA (IMU)</h2>
 
       <div className="imu-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="imu-header">
-          <span className="imu-title">VEL. ANGULAR (RAD/S)</span>
+          <span className="imu-title">ANGULAR VELOCITY (RAD/S)</span>
           <div className="imu-values">
             <span style={{ color: '#ff4d4d' }}>X: {velAngular.x.toFixed(2)}</span>
             <span style={{ color: '#00d66b' }}>Y: {velAngular.y.toFixed(2)}</span>
@@ -94,7 +100,7 @@ function CardDadosIMU({ ros }) {
 
       <div className="imu-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="imu-header">
-          <span className="imu-title">ACEL. LINEAR (M/S²)</span>
+          <span className="imu-title">LINEAR ACCELERATION (M/S²)</span>
           <div className="imu-values">
             <span style={{ color: '#ff4d4d' }}>X: {acelLinear.x.toFixed(2)}</span>
             <span style={{ color: '#00d66b' }}>Y: {acelLinear.y.toFixed(2)}</span>

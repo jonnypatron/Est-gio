@@ -2,8 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 
 import iconPosition from './assets/position.png';
 
-function CardMacrosPosicao({ ros }) {
+function CardMacrosPosicao({ ros, isActive }) {
   const topicRef = useRef(null);
+  const isActiveRef = useRef(isActive);
+
+  // ESTADO CORRIGIDO (igual ao CardDadosIMU)
+  const [acelLinear, setAcelLinear] = useState({ x: 0, y: 0, z: 0 });
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (ros) {
@@ -14,6 +22,21 @@ function CardMacrosPosicao({ ros }) {
         throttle_rate: 100
       });
       topicRef.current.advertise();
+
+      const topicoImu = new window.ROSLIB.Topic({
+        ros: ros, name: '/imu_apps', messageType: 'sensor_msgs/msg/Imu', throttle_rate: 100
+      });
+
+      // SUBSCRIÇÃO CORRIGIDA (O escudo exato do CardDadosIMU)
+      topicoImu.subscribe((msg) => {
+        if (!isActiveRef.current) return;
+        const acel = msg.linear_acceleration;
+        
+        if (!acel || typeof acel.x === 'undefined') return;
+        
+        setAcelLinear(acel);
+      });
+
     }
     return () => {
       if (topicRef.current) topicRef.current.unadvertise();
@@ -29,10 +52,13 @@ function CardMacrosPosicao({ ros }) {
 
   return (
     <div className="card">
-      {/* NOVO: Card Header compacto */}
-      <div className="macro-card-header">
-        <h3 className="card-title">POSITION</h3>
-        <img src={iconPosition} alt="Posição" className="card-macro-icon icon-green-tint" />
+      <div className="macro-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h3 className="card-title" style={{ margin: 0 }}>POSITION</h3>
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', color: '#a0a0a0', backgroundColor: '#222', padding: '5px 10px', borderRadius: '6px' }}>
+            <span style={{ color: '#ff4d4d' }}>X: {acelLinear.x.toFixed(2)} </span>
+            <span style={{ color: '#00d66b' }}>Y: {acelLinear.y.toFixed(2)} </span>
+            <span style={{ color: '#3498db' }}>Z: {acelLinear.z.toFixed(2)}</span>
+        </div>
       </div>
       
       <div className="macro-grid">
@@ -50,7 +76,7 @@ function CardMacrosPosicao({ ros }) {
         </button>
         
         <button className="macro-btn sys-accent reset-btn" onClick={() => sendTask(9, 'Reset Odometry')}>
-          RESET ODOMETRIA
+          RESET ODOMETRY
         </button>
       </div>
     </div>

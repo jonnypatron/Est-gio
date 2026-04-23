@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 
-function CardForcaG({ ros }) {
+function CardForcaG({ ros, isActive }) {
   const [gForce, setGForce] = useState(0.0);
+
+  const isActiveRef = useRef(isActive);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (!ros) return;
@@ -11,10 +17,11 @@ function CardForcaG({ ros }) {
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',
-      throttle_rate: 50
+      throttle_rate: 70
     });
 
     topicoAccel.subscribe((msg) => {
+      if (!isActiveRef.current) return;
       const zAccel = msg.linear_acceleration.z;
       const gReal = zAccel / 9.81;
       setGForce(gReal);
@@ -31,7 +38,7 @@ function CardForcaG({ ros }) {
   return (
     <div className="card gforce-card">
       {/* Escondemos o título para dar todo o espaço à fita */}
-      <h2 style={{ display: 'none' }}>FORÇA Gz</h2>
+      <h2 style={{ display: 'none' }}>Gz-FORCE</h2>
 
       <div className="tape-window">
         <div className="tape-center-mark">

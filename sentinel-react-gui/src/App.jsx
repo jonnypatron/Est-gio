@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-// ⚠️ IMPORT DO ROSLIB APAGADO DAQUI!
+import { useState, useEffect, useRef } from 'react';
 import './index.css';
 
 import PaginaTelemetria from './PaginaTelemetria';
@@ -7,19 +6,21 @@ import PaginaVisualizacao from './PaginaVisualizacao';
 import PaginaControlo from './PaginaControlo';
 
 function App() {
-  const [status, setStatus] = useState('DESCONECTADO');
+  const [status, setStatus] = useState('DISCONNECTED');
   const [statusColor, setStatusColor] = useState('#ff4d4d');
   const [ros, setRos] = useState(null);
   const [bateria, setBateria] = useState(0);
+
+  const [pressao, setPressao] = useState('0.00');
+  const [gz, setGz] = useState('1.00');
   
   const [abaAtiva, setAbaAtiva] = useState('telemetria');
 
   useEffect(() => {
-    // Agora usa o window.ROSLIB que vem do index.html
     const rosConnection = new window.ROSLIB.Ros({ url: 'ws://10.0.2.2:9090' });
 
     rosConnection.on('connection', () => {
-      setStatus('LIGADO!');
+      setStatus('CONNECTED!');
       setStatusColor('#00d66b');
       setRos(rosConnection);
 
@@ -30,12 +31,25 @@ function App() {
       });
       
       batteryTopic.subscribe((msg) => {
-        // Escudo básico para a bateria também
         if (msg && typeof msg.percentage !== 'undefined') {
           setBateria(msg.percentage);
         }
       });
+
+      const imuTopic = new window.ROSLIB.Topic({ ros: rosConnection, name: '/imu_apps', messageType: 'sensor_msgs/msg/Imu', throttle_rate: 200 });
+      imuTopic.subscribe((msg) => {
+        if (msg && msg.linear_acceleration) {
+          setGz((msg.linear_acceleration.z / 9.81).toFixed(2));
+        }
+      });
+
+      const pressaoTopic = new window.ROSLIB.Topic({ ros: rosConnection, name: '/adc/pressure', messageType: 'std_msgs/msg/Float32', throttle_rate: 200 });
+      pressaoTopic.subscribe((msg) => {
+        if (msg) setPressao(msg.data.toFixed(2));
+      });
     });
+
+
 
     rosConnection.on('error', () => {
       setStatus('ERRO');
@@ -49,14 +63,16 @@ function App() {
     });
   }, []);
 
-  // ESTILOS DE ESCONDERIJO QUE NÃO PARTEM OS GRÁFICOS
   const estiloVisivel = { display: 'block', height: '100%', width: '100%' };
   const estiloEscondido = { position: 'absolute', top: '-9999px', left: '-9999px', visibility: 'hidden' };
 
   return (
     <div className="app-wrapper">
       <header className="mission-header">
-        <div className="header-left"></div>
+        <div className="header-left" style={{ display: 'flex', gap: '15px', paddingLeft: '10px', fontSize: '14px', fontWeight: 'bold', color: '#00d66b' }}>
+          <span>{pressao} BAR</span>
+          <span>{gz} Gz</span>
+        </div>
 
         <nav className="header-center navbar">
           <button 
@@ -64,21 +80,21 @@ function App() {
             onClick={() => setAbaAtiva('controlo')}
             style={{ background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            CONTROLO
+            CONTROL
           </button>
           <button 
             className={`nav-link ${abaAtiva === 'visualizacao' ? 'active' : ''}`}
             onClick={() => setAbaAtiva('visualizacao')}
             style={{ background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            VISUALIZAÇÃO
+            VISUALIZATION
           </button>
           <button 
             className={`nav-link ${abaAtiva === 'telemetria' ? 'active' : ''}`}
             onClick={() => setAbaAtiva('telemetria')}
             style={{ background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            TELEMETRIA
+            TELEMETRY
           </button>
         </nav>
 
@@ -102,17 +118,16 @@ function App() {
 
       <main className="content-area" style={{ position: 'relative', overflow: 'hidden' }}>
         
-        {/* A aplicação dos novos estilos em vez do simples display: none */}
         <div style={abaAtiva === 'telemetria' ? estiloVisivel : estiloEscondido}>
-          <PaginaTelemetria ros={ros} />
+          <PaginaTelemetria ros={ros} isActive={abaAtiva === 'telemetria'} />
         </div>
 
         <div style={abaAtiva === 'visualizacao' ? estiloVisivel : estiloEscondido}>
-          <PaginaVisualizacao ros={ros} />
+          <PaginaVisualizacao ros={ros} isActive={abaAtiva === 'visualizacao'} />
         </div>
 
         <div style={abaAtiva === 'controlo' ? estiloVisivel : estiloEscondido}>
-          <PaginaControlo ros={ros} />
+          <PaginaControlo ros={ros} isActive={abaAtiva === 'controlo'} />
         </div>
       </main>
     </div>

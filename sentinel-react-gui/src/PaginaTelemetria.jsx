@@ -5,23 +5,25 @@ import CardDadosIMU from './CardDadosIMU';
 import CardForcaG from './CardForcaG'; 
 import CardConsola from './CardConsola';
 
-function PaginaTelemetria({ ros }) {
+// 1. Receber o isActive
+function PaginaTelemetria({ ros, isActive }) {
   return (
     <div className="telemetry-dashboard">
       
       <div className="telemetry-column">
-        {ros && <CardBateria ros={ros} />}
-        {ros && <CardAmbiente ros={ros} />}
-        {ros && <CardForcaG ros={ros} />}
+        {/* 2. Enviar o isActive para todos os cartões! */}
+        {ros && <CardBateria ros={ros} isActive={isActive} />}
+        {ros && <CardAmbiente ros={ros} isActive={isActive} />}
+        {ros && <CardForcaG ros={ros} isActive={isActive} />}
       </div>
 
       <div className="telemetry-column">
-        {ros && <CardDadosIMU ros={ros} />}
+        {ros && <CardDadosIMU ros={ros} isActive={isActive} />}
       </div>
 
       <div className="telemetry-column wide-column">
-        {ros && <CardPropulsores ros={ros} />}
-        {ros && <CardConsola ros={ros} />}
+        {ros && <CardPropulsores ros={ros} isActive={isActive} />}
+        {ros && <CardConsola ros={ros} isActive={isActive} />}
       </div>
 
     </div>

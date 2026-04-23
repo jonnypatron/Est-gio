@@ -1,12 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import MiniChart from './MiniChart';
 
-function CardBateria({ ros }) {
+function CardBateria({ ros, isActive }) {
   const [bateria, setBateria] = useState('--');
   const [voltagem, setVoltagem] = useState('--');
 
   const [historicoVoltagem, setHistoricoVoltagem] = useState([]);
+  const isActiveRef = useRef(isActive);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (!ros) return;
@@ -19,6 +24,7 @@ function CardBateria({ ros }) {
     });
 
     topicoBateria.subscribe((mensagem) => {
+      if (!isActiveRef.current) return;
       const perc = (mensagem.percentage * 100).toFixed(0);
       const volt = mensagem.voltage.toFixed(2);
       

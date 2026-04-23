@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 
-function CardAmbiente({ ros }) {
+function CardAmbiente({ ros, isActive }) {
     const [temperatura, setTemperatura] = useState(0);
     const [pressao, setPressao] = useState(0);
+
+    const isActiveRef = useRef(isActive);
+
+    useEffect(() => {
+        isActiveRef.current = isActive;
+    }, [isActive]);
 
     useEffect(() => {
         if (!ros) return;
@@ -12,21 +18,23 @@ function CardAmbiente({ ros }) {
             ros: ros,
             name: '/Temperature',
             messageType: 'sensor_msgs/msg/Temperature',
-            throttle_rate: 200
+            throttle_rate: 500
         });
 
         const topicoPressao = new window.ROSLIB.Topic({
             ros: ros,
             name: '/adc/pressure',
             messageType: 'std_msgs/msg/Float32',
-            throttle_rate: 50
+            throttle_rate: 500
         });
 
         topicoTemperatura.subscribe((mensagem) => {
+            if (!isActiveRef.current) return;
             setTemperatura(mensagem.temperature);
         });
 
         topicoPressao.subscribe((mensagem) => {
+            if (!isActiveRef.current) return;
             setPressao(mensagem.data); 
         });
 
@@ -39,7 +47,7 @@ function CardAmbiente({ ros }) {
     return (
         <div className="card">
             {/* O h2 fica aqui caso precises dele no PC, mas vamos escondê-lo no telemóvel */}
-            <h2 className="ambiente-title">AMBIENTE</h2>
+            <h2 className="ambiente-title">ENVIRONMENT</h2>
             
             <div className="ambiente-container">
                 <div className="ambiente-item">

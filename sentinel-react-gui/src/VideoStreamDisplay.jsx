@@ -66,7 +66,7 @@ export default function VideoStreamDisplay({ videoWsUrl, topic, cameraLabel }) {
       
       {!imageUrl ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#888' }}>
-          A aguardar sinal de vídeo...
+          Waiting for video signal...
         </div>
       ) : (
         <img

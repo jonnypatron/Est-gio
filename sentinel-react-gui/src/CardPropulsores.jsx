@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 
-function CardPropulsores({ ros }) {
+function CardPropulsores({ ros, isActive }) {
   const [thrusters, setThrusters] = useState(new Array(8).fill(0));
+
+  const isActiveRef = useRef(isActive);
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (!ros) return;
@@ -11,10 +16,11 @@ function CardPropulsores({ ros }) {
       ros: ros,
       name: '/thrusters/u',
       messageType: 'std_msgs/msg/Int32MultiArray',
-      throttle_rate: 30
+      throttle_rate: 70
     });
 
     topico.subscribe((msg) => {
+      if (!isActiveRef.current) return;
       // Se não houver mensagem, não houver dados, ou a lista tiver menos de 8 motores, ignora!
       if (!msg || !msg.data || msg.data.length < 8) {
         return; 
@@ -30,7 +36,7 @@ function CardPropulsores({ ros }) {
     <div className="manifold-container">
       <h3 className="manifold-title">{titulo}</h3>
       <div className="manifold-circle">
-        <div className="forward-mark">FRENTE</div>
+        <div className="forward-mark">FRONT</div>
 
         <ThrusterNozzle active={thrusters[indices[0]]} position="fr" label={`T${indices[0]}`} />
         <ThrusterNozzle active={thrusters[indices[1]]} position="rr" label={`T${indices[1]}`} />
@@ -42,10 +48,10 @@ function CardPropulsores({ ros }) {
 
   return (
     <div className="card rcs-card">
-      <h2>PROPULSORES</h2>
+      <h2>THRUSTERS</h2>
       <div className="manifolds-wrapper-vertical">
-        {renderManifold("CIMA", [4, 5, 6, 7])}
-        {renderManifold("BAIXO", [0, 1, 2, 3])}
+        {renderManifold("TOP", [4, 5, 6, 7])}
+        {renderManifold("BOTTOM", [0, 1, 2, 3])}
       </div>
     </div>
   );

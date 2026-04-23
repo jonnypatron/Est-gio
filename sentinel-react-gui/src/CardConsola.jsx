@@ -1,9 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 
 
-function CardConsola({ ros }) {
+function CardConsola({ ros, isActive }) {
   const [logs, setLogs] = useState([]);
   const consoleRef = useRef(null);
+  const isActiveRef = useRef(isActive);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (!ros) return;
@@ -36,8 +41,14 @@ function CardConsola({ ros }) {
       });
     };
 
-    topicoLogs.subscribe((msg) => adicionarLog(msg.data, 'LOG'));
-    topicoTasks.subscribe((msg) => adicionarLog(msg.data, 'TASK'));
+    topicoLogs.subscribe((msg) => {
+      if (!isActiveRef.current) return;
+      adicionarLog(msg.data, 'LOG');
+    });
+    topicoTasks.subscribe((msg) => {
+      if (!isActiveRef.current) return;
+      adicionarLog(msg.data, 'TASK');
+    });
 
     return () => {
       topicoLogs.unsubscribe();
@@ -60,7 +71,7 @@ function CardConsola({ ros }) {
       
       <div className="console-window" ref={consoleRef}>
         {logs.length === 0 && (
-          <div className="log-line">A aguardar dados da Sentinel...</div>
+          <div className="log-line">Waiting data from Sentinel...</div>
         )}
         
         {logs.map((log, index) => (

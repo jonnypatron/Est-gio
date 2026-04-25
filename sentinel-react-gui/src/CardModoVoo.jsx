@@ -39,9 +39,7 @@ function CardModoVoo({ ros }) {
 
   return (
     <div className="card modo-voo-card">
-      <h3 className="card-title" style={{ textAlign: 'center', marginBottom: '12px' }}>
-        CONTROLLER STATE
-      </h3>
+
       
       <div className="modo-selector">
         <button 

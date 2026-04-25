@@ -17,7 +17,7 @@ function App() {
   const [abaAtiva, setAbaAtiva] = useState('telemetria');
 
   useEffect(() => {
-    const rosConnection = new window.ROSLIB.Ros({ url: 'ws://10.0.2.2:9090' });
+    const rosConnection = new window.ROSLIB.Ros({ url: 'ws://192.168.31.14:9090' });
 
     rosConnection.on('connection', () => {
       setStatus('CONNECTED!');
@@ -27,7 +27,8 @@ function App() {
       const batteryTopic = new window.ROSLIB.Topic({
         ros: rosConnection,
         name: '/Battery',
-        messageType: 'sensor_msgs/msg/BatteryState'
+        messageType: 'sensor_msgs/msg/BatteryState',
+        throttle_rate: 200
       });
       
       batteryTopic.subscribe((msg) => {
@@ -38,14 +39,18 @@ function App() {
 
       const imuTopic = new window.ROSLIB.Topic({ ros: rosConnection, name: '/imu_apps', messageType: 'sensor_msgs/msg/Imu', throttle_rate: 200 });
       imuTopic.subscribe((msg) => {
-        if (msg && msg.linear_acceleration) {
+        // ESCUDO: Verifica se a aceleração existe E se o Z é um número
+        if (msg && msg.linear_acceleration && typeof msg.linear_acceleration.z !== 'undefined') {
           setGz((msg.linear_acceleration.z / 9.81).toFixed(2));
         }
       });
 
       const pressaoTopic = new window.ROSLIB.Topic({ ros: rosConnection, name: '/adc/pressure', messageType: 'std_msgs/msg/Float32', throttle_rate: 200 });
       pressaoTopic.subscribe((msg) => {
-        if (msg) setPressao(msg.data.toFixed(2));
+        // ESCUDO: Verifica se o data existe antes de usar o toFixed
+        if (msg && typeof msg.data !== 'undefined') {
+           setPressao(msg.data.toFixed(2));
+        }
       });
     });
 
@@ -69,7 +74,7 @@ function App() {
   return (
     <div className="app-wrapper">
       <header className="mission-header">
-        <div className="header-left" style={{ display: 'flex', gap: '15px', paddingLeft: '10px', fontSize: '14px', fontWeight: 'bold', color: '#00d66b' }}>
+        <div className="header-left" style={{ display: 'flex', gap: '15px', paddingLeft: '10px', fontSize: '14px', fontWeight: 'bold', color: '#3498db' }}>
           <span>{pressao} BAR</span>
           <span>{gz} Gz</span>
         </div>

@@ -17,12 +17,11 @@ function CardDadosIMU({ ros, isActive }) {
   useEffect(() => {
     if (!ros) return;
 
-    // 1. Throttle a 150ms (~6.6 Hz). Suaviza os números e a velocidade da linha.
     const topicoImu = new window.ROSLIB.Topic({
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',
-      throttle_rate: 40
+      throttle_rate: 100
     });
 
     topicoImu.subscribe((msg) => {

@@ -16,7 +16,7 @@ function CardPropulsores({ ros, isActive }) {
       ros: ros,
       name: '/thrusters/u',
       messageType: 'std_msgs/msg/Int32MultiArray',
-      throttle_rate: 70
+      throttle_rate: 150
     });
 
     topico.subscribe((msg) => {

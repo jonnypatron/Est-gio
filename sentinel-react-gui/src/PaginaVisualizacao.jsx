@@ -25,7 +25,7 @@ function PaginaVisualizacao({ ros, isActive }) {
       ros: ros,
       name: '/vvhub_odom',
       messageType: 'nav_msgs/msg/Odometry',
-      throttle_rate: 33 
+      throttle_rate: 50 
     });
 
     quatTopic.subscribe((msg) => {
@@ -60,7 +60,7 @@ function PaginaVisualizacao({ ros, isActive }) {
       ros: ros,
       name: '/thrusters/u',
       messageType: 'std_msgs/msg/Int32MultiArray',
-      throttle_rate: 100 // Podemos aumentar para 100ms aqui, poupa muito CPU!
+      throttle_rate: 150 
     });
     
     thrusterTopic.subscribe((msg) => {
@@ -80,7 +80,7 @@ function PaginaVisualizacao({ ros, isActive }) {
       {/* O resto do return mantém-se EXATAMENTE IGUAL ao que tinhas */}
       <div className="viz-card video-card" style={{ position: 'relative' }}>
           <VideoStreamDisplay 
-            videoWsUrl="ws://172.18.134.174:9092" 
+            videoWsUrl="ws://192.168.31.14:9092"
             topic="/camera/compressed" 
             cameraLabel="Câmara Sentinel" 
           />
@@ -104,7 +104,6 @@ function PaginaVisualizacao({ ros, isActive }) {
           <color attach="background" args={['#0d0d0d']} />
           <ambientLight intensity={0.6} /> 
           <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
-          <Environment preset="city" /> 
           <Suspense fallback={null}>
             <SentinelModel rotationQuat={rotationQuat} />
           </Suspense>

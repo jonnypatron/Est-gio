@@ -13,13 +13,10 @@
 }
 
 html, body {
+  background-color: #121212; 
   margin: 0;
   padding: 0;
-  background-color: var(--bg);
-  color: var(--text);
-  font-family: sans-serif;
-  text-align: center;
-  min-height: 100vh;
+  color: white; /* Repor a cor branca global que te apaguei! */
 }
 
 .container {
@@ -104,6 +101,9 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* A ÚNICA ALTERAÇÃO PARA A CÂMARA DO ONEPLUS: */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .mission-header {
@@ -171,8 +171,8 @@ html, body {
 
 .content-area {
   flex: 1;
-  padding: 20px;
-  overflow-y: auto;
+  position: relative;
+  overflow: hidden;
 }
 
 .viz-container {
@@ -305,11 +305,12 @@ html, body {
 }
 
 .telemetry-dashboard {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr; 
-  gap: 20px;
-  height: calc(100vh - 120px); 
-  padding: 10px 30px;
+    display: grid;
+    /* Ajuste sugerido para o rácio do N10 */
+    grid-template-columns: 28% 40% 28%; 
+    gap: 8px;
+    justify-content: center; /* Garante que fica centrado se sobrar espaço */
+    padding: 5px 15px; 
 }
 
 .telemetry-column {
@@ -969,20 +970,27 @@ html, body {
    ========================================================================== */
 @media screen and (max-width: 950px) and (orientation: landscape) {
   
-  /* 1. TRANCA DE ECRÃ ABSOLUTA */
   html, body, #root, .app-wrapper, .content-area {
     overflow: hidden !important;
     height: 100vh;
     width: 100vw;
     margin: 0;
-    padding: 0 !important; /* Mata o padding que causava o scroll final! */
+    padding: 0 !important; 
+  }
+
+  /* FORÇAR A CÂMARA DE FORMA ISOLADA NO WRAPPER */
+  .app-wrapper {
+    padding: 0 !important; 
+    width: 100vw;
+    height: 100vh;
   }
 
   /* 2. HEADER MINIMALISTA */
   .mission-header {
     height: 35px;
-    padding: 0 10px;
+    padding: 0 15px !important; 
   }
+
   .nav-link {
     padding: 8px 12px;
     font-size: 11px;
@@ -992,10 +1000,11 @@ html, body {
 
   /* 3. NOVA GRELHA (3 COLUNAS) COM PROTEÇÃO ANTI-STRETCH */
   .telemetry-dashboard {
-    padding: 5px;
-    gap: 6px; 
+    padding: 8px !important; /* Margem igual a toda a volta */
+    gap: 8px; 
+    width: 100%; /* Força a ocupar a largura toda que libertámos */
     height: calc(100vh - 35px);
-    grid-template-columns: 1fr 1.3fr 1fr; 
+    grid-template-columns: 1fr 1.3fr 1fr; /* Proporção ideal */
   }
   
   .telemetry-column {
@@ -1235,6 +1244,7 @@ html, body {
     padding-right: 2px; 
     display: flex;
     flex-direction: column;
+    padding-right: 10px !important;
   }
 
   .log-line {
@@ -1258,12 +1268,12 @@ html, body {
      PÁGINA DE VISUALIZAÇÃO (Ecrã Total e HUDs táticos)
      ========================================== */
   .viz-container {
-    /* 1. Esticar para ocupar o espaço morto em baixo */
-    height: calc(100vh - 35px) !important; /* 100% do ecrã menos o header */
+    height: calc(100vh - 35px) !important; 
     width: 100% !important;
-    padding: 6px !important; /* Menos margem exterior */
-    gap: 6px !important; /* Menos espaço entre o vídeo e o 3D */
+    padding: 8px !important; /* Aumentar 2px para afastar das bordas do telemóvel */
+    gap: 8px !important; 
     margin: 0 !important;
+    box-sizing: border-box;
   }
 
   .viz-card {
@@ -1275,44 +1285,84 @@ html, body {
 
   /* 2. Encolher HUD do Vídeo (Thrusters) */
   .hud-thrusters {
-    transform: scale(0.65) !important; /* Reduz para 65% do tamanho original */
-    transform-origin: top left !important; /* Encolhe em direção ao canto */
-    top: 10px !important;
-    left: 10px !important;
+    transform: scale(0.65) !important; 
+    transform-origin: top left !important; 
+    top: 15px !important; /* Mais afastado do topo */
+    left: 15px !important; /* Mais afastado da esquerda */
   }
 
   /* 3. Encolher HUD do 3D (Roll/Pitch/Yaw) */
   .modern-hud {
-    transform: scale(0.65) !important; /* Reduz para 65% */
-    transform-origin: bottom left !important; /* Encolhe em direção ao fundo esquerdo */
-    bottom: 10px !important;
-    left: 10px !important;
+    transform: scale(0.65) !important; 
+    transform-origin: bottom left !important; 
+    bottom: 20px !important; /* LEVANTAR 20px (Impede o corte do Yaw/Pitch/Roll) */
+    left: 15px !important;
+  }
+
+  .pagina-scroll {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100vh - 35px) !important; /* Ocupa o ecrã todo menos o header */
+    width: 100vw !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+    gap: 8px !important;
+    overflow: hidden !important;
   }
 
   .controlo-grid {
-    grid-template-columns: 1fr 1fr; /* Esquerda (botoes) e Direita (motores) lado a lado */
-    gap: 8px; 
-    margin-bottom: 8px;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    flex: 0.6 !important; /* Ocupa metade do espaço vertical disponível */
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  .controlo-esquerdo {
-    gap: 6px; /* Botoes mais juntinhos no telemovel */
+  .controlo-esquerdo, .controlo-direito {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    height: 100% !important;
   }
 
-  .kill-switch-container {
-    grid-column: span 1; 
+  .kill-switch-card, .modo-voo-card, .rcs-card {
+    flex: 1 !important; /* Faz com que os cartões estiquem para preencher a coluna */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 8px !important;
   }
 
   /* 2. AS MACROS (Linha 2) */
   .macros-container {
-    grid-column: 1 / -1; 
-    grid-template-columns: 1fr 1fr 65px; /* A 3ª coluna fica com 65px para não roubar muito espaço */
-    gap: 6px; 
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 65px !important; /* Attitude, Position, Reset */
+    gap: 8px !important;
+    flex: 1.4 !important; /* Fica ligeiramente mais alta que a parte de cima */
+    margin: 0 !important;
+    height: auto !important;
+  }
+
+  .macros-container .card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 8px !important;
   }
 
   /* 3. EMAGRECIMENTO DOS CARTÕES (Cortar o desperdício de espaço) */
-  .kill-switch-card, .modo-voo-card, .card {
+  .card {
     padding:6px 8px; /* Margens interiores muito curtas */
+  }
+
+  .kill-switch-card {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   /* Títulos pequeninos mas legíveis */
@@ -1324,34 +1374,52 @@ html, body {
 
   /* 4. BOTÕES DA LINHA 1 (Segurança e Modos) */
   .kill-switch-actions {
-    gap: 6px;
+    display: flex !important;
+    flex-direction: row !important; /* Lado a lado! */
+    gap: 8px !important;
+    flex: 1 !important;
   }
 
   .btn-arm, .btn-kill {
-    padding: 8px 4px;
-    font-size: 0.85rem;
-    border-radius: 6px;
+    flex: 1 !important; /* Partilham a largura 50/50 */
+    height: 100% !important;
+    margin: 0 !important;
+    font-size: 0.85rem !important; 
+    padding: 4px !important;
   }
 
 
   .modo-selector {
-    padding: 2px;
+    display: flex !important;
+    flex-direction: row !important; /* Força horizontal */
+    gap: 4px !important;
+    flex: 1 !important;
   }
 
   .modo-btn {
-    padding: 4px 2px;
-    font-size: 0.75rem;
+    flex: 1 !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.75rem !important;
   }
 
   /* 5. BOTÕES DA LINHA 2 (As Macros) */
   .macro-grid {
-    gap: 4px;
-    margin-top: 0px;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    flex: 1 !important;
+    margin-top: 4px !important;
   }
 
   .macro-btn {
-    padding: 4px 2px; /* Botões fininhos para não empurrarem a página para baixo */
-    font-size: 0.75rem;
+    height: 100% !important; /* Faz os botões esticarem até ao fundo do cartão */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px !important;
   }
 
   /* Reduzimos a espessura do "sotaque" de cor lateral */
@@ -1366,8 +1434,13 @@ html, body {
   }
 
   .reset-side-btn {
-    font-size: 0.65rem !important; /* Letra ajustada para caber bem */
-    border-radius: 6px !important;
+    height: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
   }
 
   .reset-icon {

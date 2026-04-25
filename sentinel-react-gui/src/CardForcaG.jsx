@@ -17,7 +17,7 @@ function CardForcaG({ ros, isActive }) {
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',
-      throttle_rate: 70
+      throttle_rate: 150
     });
 
     topicoAccel.subscribe((msg) => {

@@ -17,7 +17,7 @@ function App() {
   const [abaAtiva, setAbaAtiva] = useState('telemetria');
 
   useEffect(() => {
-    const rosConnection = new window.ROSLIB.Ros({ url: 'ws://192.168.31.14:9090' });
+    const rosConnection = new window.ROSLIB.Ros({ url: 'ws://172.20.10.4:9090' });
 
     rosConnection.on('connection', () => {
       setStatus('CONNECTED!');

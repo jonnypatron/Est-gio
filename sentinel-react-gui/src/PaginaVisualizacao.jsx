@@ -8,7 +8,7 @@ import VideoStreamDisplay from './VideoStreamDisplay';
 
 // 2. Receber o isActive
 function PaginaVisualizacao({ ros, isActive }) {
-  const [rotationQuat, setRotationQuat] = useState({ x: 0, y: 0, z: 0, w: 1 });
+  const rotationQuatRef = useRef({ x: 0, y: 0, z: 0, w: 1 });
   const [euler, setEuler] = useState({ roll: 0, pitch: 0, yaw: 0 });
   const [thrusters, setThrusters] = useState(new Array(8).fill(0));
 
@@ -29,20 +29,18 @@ function PaginaVisualizacao({ ros, isActive }) {
     });
 
     quatTopic.subscribe((msg) => {
-      // 🛑 CORTA-CORRENTE: Se a aba não estiver ativa, ignora os dados!
       if (!isActiveRef.current) return;
 
       try {
-        if (!msg || !msg.pose || !msg.pose.pose || !msg.pose.pose.orientation) {
-          return; 
-        }
+        if (!msg || !msg.pose || !msg.pose.pose || !msg.pose.pose.orientation) return; 
         const quat = msg.pose.pose.orientation;
-        if (typeof quat.x === 'undefined' || isNaN(quat.x)) {
-          return;
-        }
+        if (typeof quat.x === 'undefined' || isNaN(quat.x)) return;
 
-        setRotationQuat(quat); 
+        // ATUALIZAR A REF DIRETAMENTE (Não aciona um render do React!)
+        rotationQuatRef.current = quat;
 
+        // Converter para Euler apenas para o texto no ecrã (A cada ~2 frames para poupar)
+        // Uma pequena otimização: não atualizar o texto a toda a hora se a mudança for mínima
         const threeQuat = new THREE.Quaternion(quat.x, quat.y, quat.z, quat.w);
         const eulerOrder = new THREE.Euler().setFromQuaternion(threeQuat, 'XYZ');
         
@@ -80,7 +78,7 @@ function PaginaVisualizacao({ ros, isActive }) {
       {/* O resto do return mantém-se EXATAMENTE IGUAL ao que tinhas */}
       <div className="viz-card video-card" style={{ position: 'relative' }}>
           <VideoStreamDisplay 
-            videoWsUrl="ws://192.168.31.14:9092"
+            videoWsUrl="ws://172.20.10.4:9092"
             topic="/camera/compressed" 
             cameraLabel="Câmara Sentinel" 
           />
@@ -105,7 +103,8 @@ function PaginaVisualizacao({ ros, isActive }) {
           <ambientLight intensity={0.6} /> 
           <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
           <Suspense fallback={null}>
-            <SentinelModel rotationQuat={rotationQuat} />
+            {/* Agora passamos a REF em vez do state */}
+            <SentinelModel rotationQuatRef={rotationQuatRef} />
           </Suspense>
           <Grid position={[0, -1.01, 0]} args={[20, 20]} cellSize={1} cellThickness={1} cellColor="#222" sectionSize={5} sectionThickness={1.5} sectionColor="#00d66b" fadeDistance={25} fadeStrength={1.5} />
           <ContactShadows position={[0, -1, 0]} opacity={0.6} scale={10} blur={2.5} far={2} />

@@ -1,39 +1,56 @@
-import React, { useRef } from 'react';
-import { useFrame } from '@react-three/fiber'; // Importamos o useFrame!
+import React, { useRef, useMemo, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Recebe a Ref em vez do State
-function SentinelModel({ rotationQuatRef, ...props }) {
+// AGORA RECEBE TAMBÉM O positionRef
+function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props }) {
   const { scene } = useGLTF('/sentinel.glb'); 
   const modelRef = useRef();
+  const clonedScene = useMemo(() => scene.clone(), [scene]);
 
-  // O useFrame corre a cada frame (60 vezes por segundo) diretamente no motor 3D.
-  // Isto IGNORA o ciclo de vida do React, poupando imenso processador!
+  useEffect(() => {
+    if (isGhost) {
+      clonedScene.traverse((child) => {
+        if (child.isMesh) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: '#00d66b',        
+            wireframe: true,         
+            transparent: true,
+            opacity: 0.15,           /* MUITO mais transparente (era 0.3) */
+            emissive: '#00d66b',     
+            emissiveIntensity: 0.4,  /* Brilho menos agressivo */
+            depthWrite: false        /* MAGIA: Não recorta o robô sólido! */
+          });
+        }
+      });
+    }
+  }, [clonedScene, isGhost]);
+
   useFrame(() => {
-    // Verificamos se o modelo já carregou e se a REF tem dados
-    if (modelRef.current && rotationQuatRef && rotationQuatRef.current) {
-      
-      const q = rotationQuatRef.current;
+    if (modelRef.current) {
+      // 1. APLICAR ROTAÇÃO
+      if (rotationQuatRef && rotationQuatRef.current) {
+        const q = rotationQuatRef.current;
+        const quat = new THREE.Quaternion(q.x, q.z, -q.y, q.w);
+        modelRef.current.setRotationFromQuaternion(quat);
+      }
 
-      // Mantemos a TUA conversão de eixos exata (Mapeamento ROS -> Three.js)
-      const quat = new THREE.Quaternion(
-        q.x,
-        q.z,   
-        -q.y,  
-        q.w
-      );
-      
-      modelRef.current.setRotationFromQuaternion(quat);
+      // 2. APLICAR POSIÇÃO (Movimento no plano 3D)
+      if (positionRef && positionRef.current) {
+        const p = positionRef.current;
+        // O mesmo mapeamento de eixos da rotação!
+        // ROS(X,Y,Z) -> Three(X, Z, -Y)
+        modelRef.current.position.set(p.x, p.z, -p.y);
+      }
     }
   });
 
   return (
     <primitive 
       ref={modelRef}
-      object={scene} 
+      object={clonedScene} 
       scale={50.0} 
-      position={[0, 0, 0]} 
       {...props} 
     />
   );

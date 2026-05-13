@@ -1,7 +1,7 @@
 // 1. Adicionar o useRef no import
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, ContactShadows, GizmoHelper, GizmoViewport, Grid } from '@react-three/drei';
+import { OrbitControls, Environment, ContactShadows, GizmoHelper, GizmoViewport, Grid, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import SentinelModel from './SentinelModel';
 import VideoStreamDisplay from './VideoStreamDisplay';
@@ -9,8 +9,17 @@ import VideoStreamDisplay from './VideoStreamDisplay';
 // 2. Receber o isActive
 function PaginaVisualizacao({ ros, isActive }) {
   const rotationQuatRef = useRef({ x: 0, y: 0, z: 0, w: 1 });
+  const targetQuatRef = useRef({ x: 0, y: 0, z: 0, w: 1 });
+
+  const positionRef = useRef({ x: 0, y: 0, z: 0 });
+  const targetPositionRef = useRef({ x: 0, y: 0, z: 0 });
+  const offsetRef = useRef(null); // Guarda o ponto inicial
+
   const [euler, setEuler] = useState({ roll: 0, pitch: 0, yaw: 0 });
   const [thrusters, setThrusters] = useState(new Array(8).fill(0));
+
+  const [trailPoints, setTrailPoints] = useState([]);
+  const frameCounter = useRef(0);
 
   // 3. Criar a referência espiã
   const isActiveRef = useRef(isActive);
@@ -21,6 +30,7 @@ function PaginaVisualizacao({ ros, isActive }) {
   useEffect(() => {
     if (!ros) return;
 
+    // --- 1. ODOMETRIA (Robô Real) ---
     const quatTopic = new window.ROSLIB.Topic({
       ros: ros,
       name: '/vvhub_odom',
@@ -30,30 +40,87 @@ function PaginaVisualizacao({ ros, isActive }) {
 
     quatTopic.subscribe((msg) => {
       if (!isActiveRef.current) return;
-
       try {
-        if (!msg || !msg.pose || !msg.pose.pose || !msg.pose.pose.orientation) return; 
-        const quat = msg.pose.pose.orientation;
-        if (typeof quat.x === 'undefined' || isNaN(quat.x)) return;
-
-        // ATUALIZAR A REF DIRETAMENTE (Não aciona um render do React!)
-        rotationQuatRef.current = quat;
-
-        // Converter para Euler apenas para o texto no ecrã (A cada ~2 frames para poupar)
-        // Uma pequena otimização: não atualizar o texto a toda a hora se a mudança for mínima
-        const threeQuat = new THREE.Quaternion(quat.x, quat.y, quat.z, quat.w);
-        const eulerOrder = new THREE.Euler().setFromQuaternion(threeQuat, 'XYZ');
+        if (!msg || !msg.pose || !msg.pose.pose) return; 
         
-        setEuler({
-          roll: (eulerOrder.x * (180 / Math.PI)).toFixed(1),
-          pitch: (eulerOrder.y * (180 / Math.PI)).toFixed(1),
-          yaw: (eulerOrder.z * (180 / Math.PI)).toFixed(1)
-        });
+        // --- TRATAR A ROTAÇÃO ---
+        const quat = msg.pose.pose.orientation;
+        if (typeof quat.x !== 'undefined' && !isNaN(quat.x)) {
+          rotationQuatRef.current = quat;
+          const threeQuat = new THREE.Quaternion(quat.x, quat.y, quat.z, quat.w);
+          const eulerOrder = new THREE.Euler().setFromQuaternion(threeQuat, 'XYZ');
+          setEuler({
+            roll: (eulerOrder.x * (180 / Math.PI)).toFixed(1),
+            pitch: (eulerOrder.y * (180 / Math.PI)).toFixed(1),
+            yaw: (eulerOrder.z * (180 / Math.PI)).toFixed(1)
+          });
+        }
+
+        // --- TRATAR A POSIÇÃO COM OFFSET ---
+        const pos = msg.pose.pose.position;
+        if (typeof pos.x !== 'undefined' && !isNaN(pos.x)) {
+          if (!offsetRef.current) {
+            offsetRef.current = { x: pos.x, y: pos.y, z: pos.z };
+          }
+          const currentPos = {
+            x: pos.x - offsetRef.current.x,
+            y: pos.y - offsetRef.current.y,
+            z: pos.z - offsetRef.current.z
+          };
+          positionRef.current = currentPos;
+
+          frameCounter.current += 1;
+          if (frameCounter.current % 5 === 0) {
+            // Mapeamento ROS -> ThreeJS (x, z, -y) igual ao SentinelModel!
+            const threeVector = new THREE.Vector3(currentPos.x, currentPos.z, -currentPos.y);
+            setTrailPoints(prev => {
+              const newTrail = [...prev, threeVector];
+              if (newTrail.length > 80) newTrail.shift(); // Guarda apenas os últimos 80 pontos (cauda da estrela cadente)
+              return newTrail;
+            });
+          }
+        }
       } catch (error) {
         console.warn("Erro a ler Odometria", error);
       }
     });
 
+    // --- 2. REFERÊNCIA (Robô Fantasma) ---
+    const targetTopic = new window.ROSLIB.Topic({
+      ros: ros,
+      name: '/ref/pose',
+      messageType: 'geometry_msgs/PoseStamped',
+      throttle_rate: 50 
+    });
+
+    targetTopic.subscribe((msg) => {
+      if (!isActiveRef.current) return;
+      try {
+        if (!msg || !msg.pose) return;
+        
+        // Rotação do Fantasma
+        const quat = msg.pose.orientation;
+        if (typeof quat.x !== 'undefined' && !isNaN(quat.x)) {
+          targetQuatRef.current = quat;
+        }
+
+        // Posição do Fantasma
+        const pos = msg.pose.position;
+        if (typeof pos.x !== 'undefined' && !isNaN(pos.x) && offsetRef.current) {
+          console.log("COORDENADAS ALVO (FANTASMA):", pos.x, pos.y, pos.z);
+          targetPositionRef.current = {
+            x: pos.x - offsetRef.current.x,
+            y: pos.y - offsetRef.current.y,
+            z: pos.z - offsetRef.current.z
+          };
+        }
+      } catch (error) {
+        console.warn("Erro a ler a Referência (Target)", error);
+      }
+    });
+    // Aquele }); extra que andava aqui foi eliminado!
+
+    // --- 3. PROPULSORES ---
     const thrusterTopic = new window.ROSLIB.Topic({
       ros: ros,
       name: '/thrusters/u',
@@ -62,20 +129,20 @@ function PaginaVisualizacao({ ros, isActive }) {
     });
     
     thrusterTopic.subscribe((msg) => {
-      // 🛑 CORTA-CORRENTE
       if (!isActiveRef.current) return;
       setThrusters(msg.data);
     });
 
+    // --- LIMPEZA ---
     return () => {
       quatTopic.unsubscribe();
+      targetTopic.unsubscribe(); 
       thrusterTopic.unsubscribe();
     };
   }, [ros]);
 
   return (
     <div className="viz-container">
-      {/* O resto do return mantém-se EXATAMENTE IGUAL ao que tinhas */}
       <div className="viz-card video-card" style={{ position: 'relative' }}>
           <VideoStreamDisplay 
             videoWsUrl="ws://172.20.10.4:9092"
@@ -98,16 +165,31 @@ function PaginaVisualizacao({ ros, isActive }) {
         <div style={{ position: 'absolute', top: '15px', left: '20px', zIndex: 10 }}>
           <h2 style={{ fontSize: '11px', color: '#888', letterSpacing: '2px', margin: 0 }}>3D MODEL</h2>
         </div>
-        <Canvas camera={{ position: [6, 4, 6], fov: 45 }} shadows>
+        <Canvas camera={{ position: [6, 4, 6], fov: 45 }} shadows={{ type: THREE.PCFShadowMap }}>
           <color attach="background" args={['#0d0d0d']} />
           <ambientLight intensity={0.6} /> 
           <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
           <Suspense fallback={null}>
-            {/* Agora passamos a REF em vez do state */}
-            <SentinelModel rotationQuatRef={rotationQuatRef} />
+            <SentinelModel rotationQuatRef={rotationQuatRef} positionRef={positionRef} />
+            <SentinelModel rotationQuatRef={targetQuatRef} positionRef={targetPositionRef} isGhost={true} />
+            
+            {/* O RASTO DA TRAJETÓRIA (Desenhado a vermelho/azul) */}
+            {trailPoints.length > 1 && (
+              <Line 
+                points={trailPoints} 
+                color="#3498db" 
+                lineWidth={2.5} 
+                dashed={true}
+                dashSize={0.5}
+                dashScale={2}
+                transparent={true}
+                opacity={0.8}
+              />
+            )}
           </Suspense>
-          <Grid position={[0, -1.01, 0]} args={[20, 20]} cellSize={1} cellThickness={1} cellColor="#222" sectionSize={5} sectionThickness={1.5} sectionColor="#00d66b" fadeDistance={25} fadeStrength={1.5} />
-          <ContactShadows position={[0, -1, 0]} opacity={0.6} scale={10} blur={2.5} far={2} />
+          {/* AFUNDÁMOS A GRELHA E A SOMBRA PARA Y = -4 PARA SER O "FUNDO DA PISCINA" */}
+          <Grid position={[0, -4, 0]} args={[40, 40]} cellSize={1} cellThickness={1} cellColor="#222" sectionSize={5} sectionThickness={1.5} sectionColor="#00d66b" fadeDistance={30} fadeStrength={1.5} />
+          <ContactShadows position={[0, -3.9, 0]} opacity={0.5} scale={15} blur={2.5} far={4} />
           <OrbitControls makeDefault enablePan={false} maxPolarAngle={Math.PI / 2 + 0.1} />
           <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
             <GizmoViewport axisColors={['#ff4d4d', '#00d66b', '#3498db']} labelColor="white" />

@@ -11,7 +11,6 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-// Registar os módulos do Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -26,7 +25,9 @@ function CardDadosIMU({ ros, isActive }) {
   const [velAngular, setVelAngular] = useState({ x: 0, y: 0, z: 0 });
   const [acelLinear, setAcelLinear] = useState({ x: 0, y: 0, z: 0 });
 
-  // 1. VOLTAMOS A USAR UM SIMPLES ARRAY DE OBJETOS (Formato clássico)
+  // Referência silenciosa para a velocidade ALVO (Fantasma)
+  const targetVelRef = useRef({ x: 0, y: 0, z: 0 });
+
   const [histVel, setHistVel] = useState([]);
   const [histAcel, setHistAcel] = useState([]);
 
@@ -38,11 +39,28 @@ function CardDadosIMU({ ros, isActive }) {
   useEffect(() => {
     if (!ros) return;
 
+    // 1. SUBSCREVER A REFERÊNCIA (VELOCIDADE ALVO)
+    const targetTwistTopic = new window.ROSLIB.Topic({
+      ros: ros,
+      name: '/ref/twist',
+      messageType: 'geometry_msgs/msg/Twist',
+      throttle_rate: 50 
+    });
+
+    targetTwistTopic.subscribe((msg) => {
+      if (!isActiveRef.current) return;
+      if (msg && msg.angular) {
+        // Guarda silenciosamente sem causar re-renderings
+        targetVelRef.current = msg.angular;
+      }
+    });
+
+    // 2. SUBSCREVER A IMU FÍSICA (REALIDADE)
     const topicoImu = new window.ROSLIB.Topic({
       ros: ros,
       name: '/imu_apps',
       messageType: 'sensor_msgs/msg/Imu',
-      throttle_rate: 150 // Mantemos o throttle para performance
+      throttle_rate: 150 
     });
 
     topicoImu.subscribe((msg) => {
@@ -55,11 +73,16 @@ function CardDadosIMU({ ros, isActive }) {
       setVelAngular(vel);
       setAcelLinear(acel);
 
-      // 2. ATUALIZAMOS O HISTÓRICO EMPURRANDO UM OBJETO SIMPLES
+      // 3. JUNTAR O REAL E O ALVO NO MESMO PONTO DE HISTÓRICO
       setHistVel((prev) => {
-        const novoPonto = { x: vel.x, y: vel.y, z: vel.z };
+        const target = targetVelRef.current;
+        // rx = Real X, tx = Target X
+        const novoPonto = { 
+          rx: vel.x, ry: vel.y, rz: vel.z,
+          tx: target.x, ty: target.y, tz: target.z
+        };
         const novo = [...prev, novoPonto];
-        if (novo.length > 50) novo.shift(); // 50 pontos para fluidez
+        if (novo.length > 50) novo.shift(); 
         return novo;
       });
 
@@ -73,21 +96,20 @@ function CardDadosIMU({ ros, isActive }) {
 
     return () => {
       topicoImu.unsubscribe();
+      targetTwistTopic.unsubscribe(); // Limpar também o Target!
     };
   }, [ros]);
 
-  // 3. CONFIGURAÇÕES GLOBAIS DO GRÁFICO (Mantemos as otimizações visuais)
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: false, // CRÍTICO: Desligar animações para real-time!
-    // REMOVEMOS: parsing: false. Vamos deixar o ChartJS fazer o parsing, é mais lento mas é INFALÍVEL.
+    animation: false, 
     plugins: {
       legend: { display: false },
       tooltip: { enabled: false }, 
     },
     scales: {
-      x: { display: false }, // Esconde o eixo do tempo
+      x: { display: false }, 
       y: {
         position: 'right',
         grid: { color: '#222', drawBorder: false },
@@ -95,14 +117,30 @@ function CardDadosIMU({ ros, isActive }) {
       },
     },
     elements: {
-      point: { radius: 0 }, // Não desenhar bolinhas pesadas
-      line: { tension: 0.2, borderWidth: 1.5 }, // Suaviza um pouco ( tension maior alivia cálculos de curvas)
+      point: { radius: 0 }, 
+      line: { tension: 0.2, borderWidth: 1.5 }, 
     },
   };
 
-  // 4. CRIAR DATASET: Convertemos o array de objetos no formato que o LineChart precisa
-  const criarDataset = (histData) => ({
-    // Geramos as labels automáticas baseadas no índice
+  // 4. DATASET DA VELOCIDADE (Com as linhas do Fantasma)
+  const criarDatasetVel = (histData) => ({
+    labels: histData.map((_, i) => i),
+    datasets: [
+      // LINHAS ALVO / FANTASMA (Desenhadas primeiro para ficarem no fundo)
+      // Usamos opacidade a 40% (0.4) e tracejado (borderDash)
+      { label: 'T-X', data: histData.map(d => d.tx), borderColor: 'rgba(255, 77, 77, 0.4)', borderDash: [4, 4] },
+      { label: 'T-Y', data: histData.map(d => d.ty), borderColor: 'rgba(0, 214, 107, 0.4)', borderDash: [4, 4] },
+      { label: 'T-Z', data: histData.map(d => d.tz), borderColor: 'rgba(52, 152, 219, 0.4)', borderDash: [4, 4] },
+      
+      // LINHAS REAIS (Desenhadas por cima, sólidas)
+      { label: 'R-X', data: histData.map(d => d.rx), borderColor: '#ff4d4d' },
+      { label: 'R-Y', data: histData.map(d => d.ry), borderColor: '#00d66b' },
+      { label: 'R-Z', data: histData.map(d => d.rz), borderColor: '#3498db' },
+    ],
+  });
+
+  // 5. DATASET DA ACELERAÇÃO (Mantém-se igual)
+  const criarDatasetAcel = (histData) => ({
     labels: histData.map((_, i) => i),
     datasets: [
       { label: 'X', data: histData.map(d => d.x), borderColor: '#ff4d4d' },
@@ -111,7 +149,6 @@ function CardDadosIMU({ ros, isActive }) {
     ],
   });
 
-  // O RETURN MANTÉM TODAS AS CORREÇÕES DE LAYOUT ANTERIORES
   return (
     <div className="card imu-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <h2 style={{ display: 'none' }}>PHYSICAL DATA (IMU)</h2>
@@ -126,10 +163,10 @@ function CardDadosIMU({ ros, isActive }) {
           </div>
         </div>
         
-        {/* A JAULA À PROVA DE BALA */}
         <div style={{ position: 'relative', flex: 1, width: '100%', minHeight: 0 }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-            {histVel.length > 0 && <Line options={options} data={criarDataset(histVel)} />}
+            {/* Agora usamos o criarDatasetVel */}
+            {histVel.length > 0 && <Line options={options} data={criarDatasetVel(histVel)} />}
           </div>
         </div>
       </div>
@@ -146,10 +183,10 @@ function CardDadosIMU({ ros, isActive }) {
           </div>
         </div>
         
-        {/* A JAULA À PROVA DE BALA */}
         <div style={{ position: 'relative', flex: 1, width: '100%', minHeight: 0 }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-            {histAcel.length > 0 && <Line options={options} data={criarDataset(histAcel)} />}
+            {/* Agora usamos o criarDatasetAcel */}
+            {histAcel.length > 0 && <Line options={options} data={criarDatasetAcel(histAcel)} />}
           </div>
         </div>
       </div>

@@ -1,64 +1,79 @@
 import { useState, useEffect, useRef } from 'react';
 
-
 function CardModoVoo({ ros }) {
-  // Estado local para saber que modo está selecionado (0, 1 ou 2)
   const [modoAtivo, setModoAtivo] = useState(0);
-  const topicRef = useRef(null);
+  const topicRef           = useRef(null);
+  const userHasSelectedRef = useRef(false);
+    // Guarda se o operador já clicou pelo menos uma vez num modo.
+    // SEGURANÇA: sem este guarda, o useEffect publicaria imediatamente o modo 0 (OFF)
+    // assim que o ROS liga, podendo sobrepor o estado real do robô (ex: estava em ATTITUDE).
+    // Ao ligar a interface, o robô mantém o seu estado até o operador selecionar explicitamente.
 
+  // ── Effect 1: Cria e anuncia o tópico quando o ROS liga ──────────────────────
+  // Separado do Effect 2 para não depender de modoAtivo — o tópico só precisa
+  // de ser criado uma vez por ligação, independentemente do modo selecionado.
   useEffect(() => {
     if (!ros) return;
 
-    // Configurar o tópico
     topicRef.current = new window.ROSLIB.Topic({
-      ros: ros,
-      name: '/controller_state',
-      messageType: 'std_msgs/msg/Int32',
-      throttle_rate: 100
+      ros:          ros,
+      name:         '/controller_state',
+      messageType:  'std_msgs/msg/Int32',
+      throttle_rate: 100,
     });
     topicRef.current.advertise();
 
-    // 1. Publica imediatamente a alteração quando o utilizador clica
-    const msg = new window.ROSLIB.Message({ data: modoAtivo });
-    topicRef.current.publish(msg);
-    console.log(`Modo de Voo: ${modoAtivo}`);
+    return () => {
+      if (topicRef.current) topicRef.current.unadvertise();
+    };
+  }, [ros]);
 
-    // 2. Heartbeat: Continua a publicar o mesmo estado a cada 1 segundo (segurança)
+  // ── Effect 2: Publica o modo e mantém heartbeat ───────────────────────────────
+  // Só corre após o operador ter clicado explicitamente (userHasSelectedRef=true).
+  // O heartbeat a 1 Hz garante que o robô não perde o comando de modo
+  // em caso de frame dropout no ROSBridge — é um mecanismo de segurança.
+  useEffect(() => {
+    if (!ros || !topicRef.current || !userHasSelectedRef.current) return;
+
+    // Publicação imediata ao mudar de modo
+    topicRef.current.publish(new window.ROSLIB.Message({ data: modoAtivo }));
+    console.log(`Flight mode: ${modoAtivo}`);
+
+    // Heartbeat: republica o mesmo estado a cada 1 s para garantir consistência
     const interval = setInterval(() => {
-      topicRef.current.publish(new window.ROSLIB.Message({ data: modoAtivo }));
+      if (topicRef.current) {
+        topicRef.current.publish(new window.ROSLIB.Message({ data: modoAtivo }));
+      }
     }, 1000);
 
-    // Limpeza quando o componente é destruído ou o modo muda
-    return () => {
-      clearInterval(interval);
-      if (topicRef.current) {
-        topicRef.current.unadvertise();
-      }
-    };
-  }, [ros, modoAtivo]); // Re-executa sempre que o ROS liga ou o modo muda
+    return () => clearInterval(interval);
+  }, [ros, modoAtivo]);
+
+  // ── Handler dos botões ────────────────────────────────────────────────────────
+  // Ativa o guarda de segurança na primeira seleção e atualiza o modo.
+  const handleModoClick = (modo) => {
+    userHasSelectedRef.current = true;
+    setModoAtivo(modo);
+  };
 
   return (
     <div className="card modo-voo-card">
-
-      
       <div className="modo-selector">
-        <button 
+        <button
           className={`modo-btn ${modoAtivo === 0 ? 'active-off' : ''}`}
-          onClick={() => setModoAtivo(0)}
+          onClick={() => handleModoClick(0)}
         >
-          OFF 
+          OFF
         </button>
-        
-        <button 
+        <button
           className={`modo-btn ${modoAtivo === 1 ? 'active-att' : ''}`}
-          onClick={() => setModoAtivo(1)}
+          onClick={() => handleModoClick(1)}
         >
           ATTITUDE
         </button>
-        
-        <button 
+        <button
           className={`modo-btn ${modoAtivo === 2 ? 'active-pos' : ''}`}
-          onClick={() => setModoAtivo(2)}
+          onClick={() => handleModoClick(2)}
         >
           POSITION
         </button>

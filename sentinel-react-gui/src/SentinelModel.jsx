@@ -3,15 +3,30 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props }) {
-  const { scene }      = useGLTF('/sentinel.glb');
-  const modelRef       = useRef();
-  const clonedScene    = useMemo(() => scene.clone(), [scene]);
+const MODEL_URL = '/sentinel_leve.glb';
 
-  // ── Objetos Three.js reutilizáveis ─────────────────────────────────────────
-  // useFrame corre a 60 Hz. Criar "new THREE.Quaternion()" e "new THREE.Vector3()"
-  // em cada frame gera pressão desnecessária no GC (>3600 objetos/min descartados).
-  // Alocamos uma vez e reutilizamos com set() / copy().
+// Tamanho-alvo do robô em unidades de cena (1 unidade = 1 célula da grelha).
+// O modelo é redimensionado automaticamente para caber neste tamanho,
+// por isso já NÃO precisas de andar a calibrar o "scale" à mão.
+const TARGET_SIZE = 2.2;
+
+function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props }) {
+  const { scene }   = useGLTF(MODEL_URL);
+  const groupRef    = useRef();           // recebe a rotação/posição vinda do ROS
+  const clonedScene = useMemo(() => scene.clone(), [scene]);
+
+  // ── Auto-fit: centra na origem e normaliza o tamanho ────────────────────────
+  // Calcula a bounding box do modelo (seja qual for o tamanho/origem do export
+  // do Blender) para o centrar e dar-lhe sempre o mesmo tamanho visível.
+  const { fitScale, center } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const size   = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    return { fitScale: TARGET_SIZE / maxDim, center };
+  }, [clonedScene]);
+
+  // ── Objetos Three.js reutilizáveis (evita alocações por frame) ──────────────
   const _quat = useMemo(() => new THREE.Quaternion(), []);
   const _pos  = useMemo(() => new THREE.Vector3(),    []);
 
@@ -20,13 +35,13 @@ function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props
       clonedScene.traverse((child) => {
         if (child.isMesh) {
           child.material = new THREE.MeshStandardMaterial({
-            color:            '#00d66b',
+            color:            '#3a8f63',   // verde mais dessaturado (menos "néon")
             wireframe:        true,
             transparent:      true,
-            opacity:          0.15,
-            emissive:         '#00d66b',
-            emissiveIntensity: 0.4,
-            depthWrite:       false,   // não recorta o robô sólido
+            opacity:          0.08,        // mais discreto que o twin sólido
+            emissive:         '#2e7d5b',
+            emissiveIntensity: 0.12,       // brilho muito mais baixo
+            depthWrite:       false,
           });
         }
       });
@@ -34,34 +49,35 @@ function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props
   }, [clonedScene, isGhost]);
 
   useFrame(() => {
-    if (!modelRef.current) return;
+    if (!groupRef.current) return;
 
-    // Aplica rotação sem alocar um novo Quaternion por frame
+    // Rotação (sem alocar por frame). Mapeamento ROS(x,y,z,w) → Three(x,z,-y,w)
     if (rotationQuatRef?.current) {
       const q = rotationQuatRef.current;
-      // Mapeamento de eixos: ROS(x,y,z,w) → Three(x,z,-y,w)
       _quat.set(q.x, q.z, -q.y, q.w);
-      modelRef.current.setRotationFromQuaternion(_quat);
+      groupRef.current.setRotationFromQuaternion(_quat);
     }
 
-    // Aplica posição sem alocar um novo Vector3 por frame
+    // Posição (sem alocar por frame). Mapeamento ROS(x,y,z) → Three(x,z,-y)
     if (positionRef?.current) {
       const p = positionRef.current;
-      // Mapeamento de eixos: ROS(x,y,z) → Three(x,z,-y)
       _pos.set(p.x, p.z, -p.y);
-      modelRef.current.position.copy(_pos);
+      groupRef.current.position.copy(_pos);
     }
   });
 
+  // Hierarquia:
+  //   groupRef  → posição/rotação dinâmica do robô (em metros ROS)
+  //     group   → escala de normalização (auto-fit)
+  //       primitive → modelo, deslocado para ficar centrado na origem
   return (
-    <primitive
-      ref={modelRef}
-      object={clonedScene}
-      scale={50.0}
-      {...props}
-    />
+    <group ref={groupRef} {...props}>
+      <group scale={fitScale}>
+        <primitive object={clonedScene} position={[-center.x, -center.y, -center.z]} />
+      </group>
+    </group>
   );
 }
 
-useGLTF.preload('/sentinel.glb');
+useGLTF.preload(MODEL_URL);
 export default SentinelModel;

@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, GizmoHelper, GizmoViewport, Grid, Line } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,9 +6,6 @@ import SentinelModel from './SentinelModel';
 import VideoStreamDisplay from './VideoStreamDisplay';
 
 // ── Câmaras disponíveis ────────────────────────────────────────────────────────
-// Para adicionar/remover câmaras, edita apenas esta lista.
-// label: texto do botão (máx ~8 chars para caber no mobile)
-// topic: tópico ROS2 comprimido no robô
 const CAMERAS = [
   { label: 'HIRES',    topic: '/hires_small_color/compressed' },
   { label: 'TRACKING', topic: '/tracking/compressed'          },
@@ -16,20 +13,50 @@ const CAMERAS = [
 ];
 
 function CameraFollower({ positionRef, controlsRef }) {
+  const _v = useMemo(() => new THREE.Vector3(), []);
   useFrame(() => {
     if (positionRef.current && controlsRef.current) {
       const { x, y, z } = positionRef.current;
-      controlsRef.current.target.lerp(new THREE.Vector3(x, z, -y), 0.1);
+      controlsRef.current.target.lerp(_v.set(x, z, -y), 0.1);
       controlsRef.current.update();
     }
   });
   return null;
 }
 
-// Props:
-//   ros         — ligação ROSBridge para odometria, thrusters, etc.
-//   videoWsUrl  — URL do servidor WebSocket C++ do robô (ex: "ws://192.168.31.14:9092")
-//   isActive    — controla se os subscribers ROS2 estão ativos
+// ── Vetor curto entre o robô (atual) e a referência (fantasma) ─────────────────
+// Atualizado por frame via refs (sem re-render do React), por isso é barato.
+// Lê-se o "erro de tracking" de relance: linha curta = perto da referência.
+function ErrorVector({ positionRef, targetPositionRef }) {
+  const positions = useMemo(() => new Float32Array(6), []);
+  const geom = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return g;
+  }, [positions]);
+  const lineRef = useRef();
+
+  useFrame(() => {
+    const c = positionRef.current;
+    const t = targetPositionRef.current;
+    if (!c || !t) return;
+    // Mapeamento ROS(x,y,z) → Three(x,z,-y), igual ao modelo
+    positions[0] = c.x; positions[1] = c.z; positions[2] = -c.y;
+    positions[3] = t.x; positions[4] = t.z; positions[5] = -t.y;
+    geom.attributes.position.needsUpdate = true;
+
+    // Esconde a linha quando o erro é minúsculo (evita ruído visual)
+    const d = Math.hypot(c.x - t.x, c.y - t.y, c.z - t.z);
+    if (lineRef.current) lineRef.current.visible = d > 0.02;
+  });
+
+  return (
+    <line ref={lineRef} geometry={geom}>
+      <lineBasicMaterial color="#ffd84a" transparent opacity={0.85} />
+    </line>
+  );
+}
+
 function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
   const rotationQuatRef   = useRef({ x: 0, y: 0, z: 0, w: 1 });
   const targetQuatRef     = useRef({ x: 0, y: 0, z: 0, w: 1 });
@@ -40,16 +67,18 @@ function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
   const [euler,       setEuler]       = useState({ roll: 0, pitch: 0, yaw: 0 });
   const [thrusters,   setThrusters]   = useState(new Array(8).fill(0));
   const [trailPoints, setTrailPoints] = useState([]);
+  const [refErr,      setRefErr]      = useState({ dist: 0, attDeg: 0, hasRef: false });
 
-  // ── Seleção de câmara ──────────────────────────────────────────────────────
-  // activeTopic é passado como prop "topic" ao VideoStreamDisplay.
-  // Quando muda, o VideoStreamDisplay envia "switch" sem reconectar o WebSocket.
   const [activeTopic, setActiveTopic] = useState(CAMERAS[0].topic);
 
   const frameCounter = useRef(0);
   const controlsRef  = useRef(null);
   const isActiveRef  = useRef(isActive);
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
+
+  // Objetos reutilizáveis para o cálculo do erro de atitude
+  const _qc = useRef(new THREE.Quaternion());
+  const _qt = useRef(new THREE.Quaternion());
 
   useEffect(() => {
     if (!ros) return;
@@ -145,6 +174,35 @@ function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
     };
   }, [ros]);
 
+  // ── Erro de referência (pose − ref) a ritmo lento (~4 Hz) ─────────────────────
+  //  Lê os refs em vez de fazer setState por frame → não pesa no render loop.
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!isActiveRef.current) return;
+      const c = positionRef.current;
+      const r = targetPositionRef.current;
+      const dist = Math.hypot(c.x - r.x, c.y - r.y, c.z - r.z);
+
+      const qc = rotationQuatRef.current;
+      const qt = targetQuatRef.current;
+      _qc.current.set(qc.x, qc.y, qc.z, qc.w);
+      _qt.current.set(qt.x, qt.y, qt.z, qt.w).invert();
+      _qc.current.premultiply(_qt.current);            // q_err = q_ref⁻¹ · q_cur
+      const w = Math.min(1, Math.abs(_qc.current.w));
+      const attDeg = 2 * Math.acos(w) * (180 / Math.PI);
+
+      const hasRef = offsetRef.current !== null;
+      setRefErr({ dist, attDeg, hasRef });
+    }, 250);
+    return () => clearInterval(t);
+  }, []);
+
+  // Limiares de "convergido" (ajusta a gosto)
+  const posOk = refErr.dist   < 0.05;   // 5 cm
+  const attOk = refErr.attDeg < 5;      // 5°
+  const posColor = posOk ? '#00d66b' : '#ffd84a';
+  const attColor = attOk ? '#00d66b' : '#ffd84a';
+
   return (
     <div className="viz-container">
 
@@ -159,7 +217,6 @@ function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
           cameraLabel={CAMERAS.find(c => c.topic === activeTopic)?.label ?? 'Câmara'}
         />
 
-        {/* HUD propulsores — canto superior esquerdo */}
         <div className="hud-thrusters" style={{ position: 'absolute', zIndex: 10, top: '15px', left: '15px' }}>
           <p className="hud-label">THRUSTER ARRAY</p>
           <div className="thruster-grid">
@@ -171,21 +228,20 @@ function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
           </div>
         </div>
 
-        {/* Seletor de câmara — canto inferior direito */}
         <div style={{
           position: 'absolute', bottom: '10px', right: '10px',
           zIndex: 10, display: 'flex', gap: '4px',
         }}>
           {CAMERAS.map(({ label, topic }) => {
-            const isActive = activeTopic === topic;
+            const isSel = activeTopic === topic;
             return (
               <button
                 key={topic}
                 onClick={() => setActiveTopic(topic)}
                 style={{
-                  background:    isActive ? 'rgba(0,214,107,0.15)' : 'rgba(0,0,0,0.65)',
-                  border:        `1px solid ${isActive ? '#00d66b' : '#444'}`,
-                  color:         isActive ? '#00d66b' : '#777',
+                  background:    isSel ? 'rgba(0,214,107,0.15)' : 'rgba(0,0,0,0.65)',
+                  border:        `1px solid ${isSel ? '#00d66b' : '#444'}`,
+                  color:         isSel ? '#00d66b' : '#777',
                   borderRadius:  '4px',
                   padding:       '4px 8px',
                   fontSize:      '10px',
@@ -209,15 +265,45 @@ function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
           <h2 style={{ fontSize: '11px', color: '#888', letterSpacing: '2px', margin: 0 }}>3D MODEL</h2>
         </div>
 
-        <Canvas camera={{ position: [6, 4, 6], fov: 45 }} shadows={{ type: THREE.PCFShadowMap }}>
+        {/* HUD do erro de referência — canto superior direito */}
+        <div style={{
+          position: 'absolute', top: '12px', right: '12px', zIndex: 10,
+          background: 'rgba(10,10,10,0.75)', border: '1px solid #333',
+          borderRadius: '6px', padding: '8px 12px', backdropFilter: 'blur(4px)',
+          fontFamily: "'Courier New', monospace", minWidth: '120px',
+        }}>
+          <div style={{ fontSize: '8px', letterSpacing: '1px', color: '#777', marginBottom: '4px' }}>
+            TRACKING ERROR
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '13px', fontWeight: 'bold' }}>
+            <span style={{ color: '#666' }}>ΔPOS</span>
+            <span style={{ color: refErr.hasRef ? posColor : '#555' }}>
+              {refErr.hasRef ? `${refErr.dist.toFixed(2)} m` : '—'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '13px', fontWeight: 'bold', marginTop: '2px' }}>
+            <span style={{ color: '#666' }}>ΔATT</span>
+            <span style={{ color: refErr.hasRef ? attColor : '#555' }}>
+              {refErr.hasRef ? `${refErr.attDeg.toFixed(1)}°` : '—'}
+            </span>
+          </div>
+        </div>
+
+        <Canvas
+          camera={{ position: [6, 4, 6], fov: 45 }}
+          shadows={{ type: THREE.PCFShadowMap }}
+          dpr={[1, 1.5]}                                  /* PERF: limita o render em ecrãs retina */
+          frameloop={isActive ? 'always' : 'demand'}      /* PERF: pausa o loop 3D quando a página não está visível */
+        >
           <color attach="background" args={['#0d0d0d']} />
           <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
+          <directionalLight position={[10, 10, 5]} intensity={1.5}  />
 
           <Suspense fallback={null}>
             <CameraFollower positionRef={positionRef} controlsRef={controlsRef} />
             <SentinelModel rotationQuatRef={rotationQuatRef} positionRef={positionRef} />
             <SentinelModel rotationQuatRef={targetQuatRef}   positionRef={targetPositionRef} isGhost={true} />
+            <ErrorVector positionRef={positionRef} targetPositionRef={targetPositionRef} />
 
             {trailPoints.length > 1 && (
               <Line
@@ -240,7 +326,6 @@ function PaginaVisualizacao({ ros, videoWsUrl, isActive }) {
             sectionSize={5}     sectionThickness={1.5} sectionColor="#00d66b"
             fadeDistance={30}   fadeStrength={1.5}
           />
-          <ContactShadows position={[0, -3.9, 0]} opacity={0.5} scale={15} blur={2.5} far={4} />
           <OrbitControls ref={controlsRef} makeDefault enablePan={false} maxPolarAngle={Math.PI / 2 + 0.1} />
           <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
             <GizmoViewport axisColors={['#ff4d4d', '#00d66b', '#3498db']} labelColor="white" />

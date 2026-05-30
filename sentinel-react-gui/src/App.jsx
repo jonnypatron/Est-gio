@@ -5,32 +5,49 @@ import PaginaTelemetria   from './PaginaTelemetria';
 import PaginaVisualizacao from './PaginaVisualizacao';
 import PaginaControlo     from './PaginaControlo';
 
-// ─── Configuração do robô ──────────────────────────────────────────────────────
-//  Altera apenas aqui se o IP mudar — propaga para toda a app.
+//    ROSBRIDGE_URL  → ws://IP:9090   (telemetria/controlo — PC do supervisor)
+//    VIDEO_WS_URL   → ws://IP:9092   (stream de vídeo — IP do próprio robô)
 //
-//  Ligações utilizadas:
-//    ROSBRIDGE_URL  → ws://IP:9090  (ROSBridge — todos os dados ROS exceto vídeo)
-//    VIDEO_WS_URL   → ws://IP:9092  (servidor C++ gui_image_streamer — só vídeo)
-//
-//  Nota: já NÃO existe a porta 9091. Era a segunda ligação ROSBridge para vídeo
-//  que foi abandonada em favor do método direto na porta 9092.
-const ROBOT_IP       = '192.168.31.14';
-const ROSBRIDGE_URL  = `ws://${ROBOT_IP}:9090`;
-const VIDEO_WS_URL   = `ws://${ROBOT_IP}:9092`;
+const ROBOT_IP = '172.20.10.14';
+
+// IP por defeito da ROSBridge (PC do supervisor). Pode ser alterado em runtime
+// no menu de Definições (⚙) — fica guardado em localStorage, sem recompilar o APK.
+const DEFAULT_ROSBRIDGE_IP = '192.168.31.14';
+
+// O vídeo é o IP do próprio robô e não muda quando o IP do PC do supervisor muda,
+// por isso fica como constante (não está no menu de definições).
+const VIDEO_WS_URL = 'ws://192.168.31.14:9092';
+
+// pc Coutinho: 192.168.8.11
+// net esposende wsl: 172.26.128.78
+// net esposende windows: 192.168.31.14
 
 function App() {
   const [status,      setStatus]      = useState('DISCONNECTED');
   const [statusColor, setStatusColor] = useState('#ff4d4d');
   const [ros,         setRos]         = useState(null);
-  // rosVideo foi removido — o VideoStreamDisplay gere a sua própria ligação ws://IP:9092
+
   const [bateria,   setBateria]   = useState(0);
   const [pressao,   setPressao]   = useState('0.00');
   const [gz,        setGz]        = useState('1.00');
   const [abaAtiva,  setAbaAtiva]  = useState('telemetria');
 
+  // ── IP da ROSBridge (editável em runtime) ───────────────────────────────────
+  const [rosbridgeIp, setRosbridgeIp] = useState(
+    () => localStorage.getItem('rosbridge_ip') || DEFAULT_ROSBRIDGE_IP
+  );
+  const [showSettings, setShowSettings] = useState(false);
+  const [ipDraft,      setIpDraft]      = useState(rosbridgeIp);
+
+  const ROSBRIDGE_URL = `ws://${rosbridgeIp}:9090`;
+
   // ── LIGAÇÃO ROSBRIDGE (porta 9090) — telemetria, odometria, propulsores ──────
-  //   Esta é a única ligação ROSBridge. O vídeo já não passa por aqui.
+  //   Depende de rosbridgeIp: ao mudar o IP no menu, a ligação antiga fecha-se
+  //   e abre-se uma nova automaticamente — sem reiniciar o APK.
   useEffect(() => {
+    setStatus('CONNECTING…');
+    setStatusColor('#ffd84a');
+
     const rosConn = new window.ROSLIB.Ros({ url: ROSBRIDGE_URL });
 
     rosConn.on('connection', () => {
@@ -83,12 +100,26 @@ function App() {
       setStatusColor('#888888');
       setRos(null);
     });
-  }, []);
 
-  // ── Sem segundo useEffect de vídeo! ───────────────────────────────────────────
-  //  O VideoStreamDisplay (dentro de PaginaVisualizacao) cria e gere a sua própria
-  //  ligação WebSocket para ws://IP:9092 de forma completamente autónoma.
-  //  O App.jsx só precisa de passar a URL como string.
+    // Cleanup: ao mudar o IP (ou desmontar), fecha a ligação antiga.
+    return () => {
+      try { rosConn.close(); } catch (_) {}
+    };
+  }, [ROSBRIDGE_URL]);
+
+  // ── Guardar novo IP ──────────────────────────────────────────────────────────
+  const handleSaveIp = () => {
+    const novo = ipDraft.trim();
+    if (!novo) return;
+    localStorage.setItem('rosbridge_ip', novo);
+    setRosbridgeIp(novo);   // dispara reconexão automática
+    setShowSettings(false);
+  };
+
+  const handleOpenSettings = () => {
+    setIpDraft(rosbridgeIp);
+    setShowSettings(true);
+  };
 
   const estiloVisivel   = { display: 'block',    height: '100%', width: '100%' };
   const estiloEscondido = { position: 'absolute', top: '-9999px', left: '-9999px', visibility: 'hidden' };
@@ -133,8 +164,48 @@ function App() {
               }} />
             </div>
           </div>
+
+          {/* Botão de definições (⚙) — abre o menu para mudar o IP da ROSBridge */}
+          <button
+            className="settings-btn"
+            onClick={handleOpenSettings}
+            aria-label="Settings"
+            title="Settings"
+          >
+            ⚙
+          </button>
         </div>
       </header>
+
+      {/* ── Menu de Definições ──────────────────────────────────────────────── */}
+      {showSettings && (
+        <div className="settings-overlay" onClick={() => setShowSettings(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="settings-title">CONNECTION SETTINGS</h3>
+
+            <label className="settings-label">ROSBridge IP (supervisor PC)</label>
+            <input
+              className="settings-input"
+              type="text"
+              inputMode="decimal"
+              value={ipDraft}
+              onChange={(e) => setIpDraft(e.target.value)}
+              placeholder="192.168.31.14"
+              autoFocus
+            />
+            <p className="settings-hint">Will connect to ws://{ipDraft || '…'}:9090</p>
+
+            <div className="settings-actions">
+              <button className="settings-cancel" onClick={() => setShowSettings(false)}>
+                CANCEL
+              </button>
+              <button className="settings-save" onClick={handleSaveIp}>
+                SAVE &amp; RECONNECT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="content-area" style={{ position: 'relative', overflow: 'hidden' }}>
         <div style={abaAtiva === 'telemetria'   ? estiloVisivel : estiloEscondido}>
@@ -142,11 +213,6 @@ function App() {
         </div>
 
         <div style={abaAtiva === 'visualizacao' ? estiloVisivel : estiloEscondido}>
-          {/*
-            videoWsUrl é a única prop nova.
-            Passa a URL do servidor C++ de vídeo — sem ROSBridge, sem rosVideo.
-            O VideoStreamDisplay dentro de PaginaVisualizacao gere tudo de forma autónoma.
-          */}
           <PaginaVisualizacao
             ros={ros}
             videoWsUrl={VIDEO_WS_URL}

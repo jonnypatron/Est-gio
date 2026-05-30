@@ -1464,4 +1464,110 @@ html, body {
     height: 36px;
     opacity: 0.18; /* Ligeiramente mais visível */
   }
+
+  
+}
+
+/* =========================================================
+   DEFINIÇÕES (⚙) — botão no header + modal de ligação
+   Cola este bloco NO FIM do teu index.css
+   ========================================================= */
+
+.settings-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.4s ease;
+}
+.settings-btn:hover  { color: #fff; background: #222; }
+.settings-btn:active { transform: rotate(60deg); }
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.settings-modal {
+  width: 320px;
+  max-width: 90vw;
+  background: #141416;
+  border: 1px solid #2a2a35;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.settings-title {
+  margin: 0 0 16px 0;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #888;
+  border-bottom: 1px solid #222;
+  padding-bottom: 8px;
+}
+
+.settings-label {
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.settings-input {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  padding: 10px 12px;
+  outline: none;
+}
+.settings-input:focus { border-color: #00d66b; }
+
+.settings-hint {
+  font-size: 11px;
+  color: #555;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 8px 0 16px 0;
+  word-break: break-all;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.settings-cancel,
+.settings-save {
+  flex: 1;
+  border: none;
+  border-radius: 6px;
+  padding: 12px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.settings-cancel { background: #2a2a2a; color: #ccc; }
+.settings-save   { background: #00d66b; color: #062; }
+.settings-cancel:active,
+.settings-save:active { transform: scale(0.97); }
+
+/* Telemóvel landscape: header compacto -> ícone um pouco menor */
+@media screen and (max-width: 950px) and (orientation: landscape) {
+  .settings-btn { font-size: 16px; padding: 2px 4px; }
 }

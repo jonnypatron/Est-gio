@@ -10,6 +10,13 @@ const MODEL_URL = '/sentinel_leve.glb';
 // por isso já NÃO precisas de andar a calibrar o "scale" à mão.
 const TARGET_SIZE = 2.2;
 
+// Fator de suavização (0..1). O modelo desliza para a última pose conhecida
+// em vez de saltar para ela. Mais BAIXO = mais suave mas com mais latência;
+// mais ALTO = segue mais "colado" aos dados mas deixa passar os saltos.
+// 0.18 ≈ constante de tempo ~80 ms a 60 fps: esconde bursts e gaps de dados
+// sem latência percetível para o operador.
+const SMOOTH = 0.18;
+
 function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props }) {
   const { scene }   = useGLTF(MODEL_URL);
   const groupRef    = useRef();           // recebe a rotação/posição vinda do ROS
@@ -51,18 +58,20 @@ function SentinelModel({ rotationQuatRef, positionRef, isGhost = false, ...props
   useFrame(() => {
     if (!groupRef.current) return;
 
-    // Rotação (sem alocar por frame). Mapeamento ROS(x,y,z,w) → Three(x,z,-y,w)
+    // Rotação: desliza (slerp) para o alvo em vez de saltar.
+    // Mapeamento ROS(x,y,z,w) → Three(x,z,-y,w)
     if (rotationQuatRef?.current) {
       const q = rotationQuatRef.current;
       _quat.set(q.x, q.z, -q.y, q.w);
-      groupRef.current.setRotationFromQuaternion(_quat);
+      groupRef.current.quaternion.slerp(_quat, SMOOTH);
     }
 
-    // Posição (sem alocar por frame). Mapeamento ROS(x,y,z) → Three(x,z,-y)
+    // Posição: desliza (lerp) para o alvo em vez de saltar.
+    // Mapeamento ROS(x,y,z) → Three(x,z,-y)
     if (positionRef?.current) {
       const p = positionRef.current;
       _pos.set(p.x, p.z, -p.y);
-      groupRef.current.position.copy(_pos);
+      groupRef.current.position.lerp(_pos, SMOOTH);
     }
   });
 

@@ -10,6 +10,7 @@ function isImageFeedHeader(value) { // verifica se o objeto JSON recebido tem a 
  
 function getMimeType(format) { // Converte o campo "format" do ROS para um MIME type que o browser entende.
   const n = format.toLowerCase();
+
   if (n.includes("png"))                        return "image/png"; // O ROS envia formato como uma string livre, que pode incluir texto extra como "rgb8; jpeg compressed" ou apenas "jpeg", Por isso usa-se includes em vez de comparaçoes diretas
   if (n.includes("webp"))                       return "image/webp";
   if (n.includes("jpeg") || n.includes("jpg")) return "image/jpeg"; // png verificado antes de jpeg porque nao ha ambiguidade
@@ -121,9 +122,9 @@ export class ImageFeedConnectionService {
     return this.ws?.readyState === WebSocket.OPEN;
   }
  
-  // ── Comandos para o servidor C++ ──────────────────────────────────────────
+  // ── Comandos para o servidor PY ──────────────────────────────────────────
   //
-  // O servidor C++ implementa um sistema de subscrição por tópico.
+  // O servidor PY implementa um sistema de subscrição por tópico.
   // Um cliente pode pedir para receber frames de um tópico específico.
   // Isto permite, por exemplo, ter múltiplas câmaras na Sentinel mas só
   // transferir via rede as que estão visíveis na interface.
@@ -186,7 +187,7 @@ export class ImageFeedConnectionService {
  
       const view       = new DataView(buffer);
       // Lê os primeiros 4 bytes como uint32 little-endian
-      // (true = little-endian, que é o padrão no C++ com memcpy em x86/ARM)
+      // (true = little-endian, que é o padrão no PY com memcpy em x86/ARM)
       const headerSize = view.getUint32(0, true);
  
       // Validação: headerSize não pode ser 0 nem exceder o buffer restante

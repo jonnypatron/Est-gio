@@ -5,18 +5,18 @@ import PaginaTelemetria   from './PaginaTelemetria';
 import PaginaVisualizacao from './PaginaVisualizacao';
 import PaginaControlo     from './PaginaControlo';
 
-//    ROSBRIDGE_URL  → ws://IP:9090   (telemetria/controlo — PC do supervisor)
+//    ROSBRIDGE_URL  → ws://IP:9091   (telemetria/controlo — PC do supervisor)
 //    VIDEO_WS_URL   → ws://IP:9092   (stream de vídeo — IP do próprio robô)
 //
 const ROBOT_IP = '172.20.10.14';
 
 // IP por defeito da ROSBridge (PC do supervisor). Pode ser alterado em runtime
 // no menu de Definições (⚙) — fica guardado em localStorage, sem recompilar o APK.
-const DEFAULT_ROSBRIDGE_IP = '192.168.31.14';
+const DEFAULT_ROSBRIDGE_IP = '192.168.8.12';
 
 // O vídeo é o IP do próprio robô e não muda quando o IP do PC do supervisor muda,
 // por isso fica como constante (não está no menu de definições).
-const VIDEO_WS_URL = 'ws://192.168.31.14:9092';
+const VIDEO_WS_URL = 'ws://192.168.8.1:9092';
 
 // pc Coutinho: 192.168.8.11
 // net esposende wsl: 172.26.128.78
